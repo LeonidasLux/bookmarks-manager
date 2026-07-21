@@ -12,7 +12,6 @@ function App() {
   const [filtered, setFiltered] = useState<Bookmark[]>([])
   const [loading, setLoading] = useState(true)
   const [syncStatus, setSyncStatus] = useState<string | null>(null)
-  const [syncSteps, setSyncSteps] = useState<string[]>([])
 
   // 启动时：加载配置 + 书签 + 同步日志
   const init = useCallback(() => {
@@ -35,7 +34,6 @@ function App() {
         } else if (log.error) {
           setSyncStatus(`❌ ${log.error}`)
         }
-        setSyncSteps(log.steps ?? [])
       } else if (result.lastSync) {
         setSyncStatus(`上次同步: ${new Date(result.lastSync as string).toLocaleString('zh-CN')}`)
       }
@@ -60,7 +58,6 @@ function App() {
           } else if (log.error) {
             setSyncStatus(`❌ ${log.error}`)
           }
-          setSyncSteps(log.steps ?? [])
         }
       }
     }
@@ -82,7 +79,6 @@ function App() {
   // 点击同步
   const handleSync = () => {
     setSyncStatus('同步中...')
-    setSyncSteps([])
     chrome.runtime.sendMessage({ type: 'SYNC_MANUAL' })
   }
 
@@ -96,7 +92,6 @@ function App() {
         } else if (log.error) {
           setSyncStatus(`❌ ${log.error}`)
         }
-        setSyncSteps(log.steps ?? [])
       }
     })
   }
@@ -214,19 +209,6 @@ function App() {
             </div>
           )}
 
-          {/* 调试步骤 */}
-          {syncSteps.length > 0 && (
-            <div style={{
-              fontSize: '0.65rem', background: '#f5f5f5', borderRadius: 4,
-              padding: '0.375rem 0.5rem', marginTop: '0.25rem',
-              maxHeight: 150, overflowY: 'auto', fontFamily: 'monospace',
-              lineHeight: 1.4,
-            }}>
-              {syncSteps.map((s, i) => (
-                <div key={i}>{i + 1}. {s}</div>
-              ))}
-            </div>
-          )}
         </>
       )}
     </div>
