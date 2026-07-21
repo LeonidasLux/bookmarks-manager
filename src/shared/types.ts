@@ -19,6 +19,8 @@ export interface SyncResult {
   success: boolean
   timestamp: string
   error?: string
+  /** 调试信息：每步执行详情 */
+  steps?: string[]
 }
 
 export const DEFAULT_CONFIG: AppConfig = {

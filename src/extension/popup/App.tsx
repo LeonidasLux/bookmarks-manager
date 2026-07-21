@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { Bookmark, AppConfig } from '../../shared/types'
+import type { Bookmark, AppConfig, SyncResult } from '../../shared/types'
 
 function openOptions() {
   chrome.runtime.openOptionsPage()
@@ -12,41 +12,56 @@ function App() {
   const [filtered, setFiltered] = useState<Bookmark[]>([])
   const [loading, setLoading] = useState(true)
   const [syncStatus, setSyncStatus] = useState<string | null>(null)
+  const [syncSteps, setSyncSteps] = useState<string[]>([])
 
-  // 从 Service Worker 获取最新数据
-  const loadData = useCallback(() => {
+  // 启动时：加载配置 + 书签 + 同步日志
+  const init = useCallback(() => {
     chrome.runtime.sendMessage({ type: 'GET_CONFIG' }, (response) => {
-      if (response?.config) {
-        setConfig(response.config)
-      } else {
-        setConfig(null)
-      }
+      if (response?.config) setConfig(response.config)
+      else setConfig(null)
     })
 
-    chrome.storage.local.get(['bookmarks', 'lastSync'], (result) => {
+    chrome.storage.local.get(['bookmarks', 'lastSync', 'syncLog'], (result) => {
       const items = (result.bookmarks ?? []) as Bookmark[]
       setBookmarks(items)
       setFiltered(items)
       setLoading(false)
-      if (result.lastSync) {
+
+      // 恢复上次同步日志
+      const log = result.syncLog as SyncResult | undefined
+      if (log) {
+        if (log.success && log.timestamp) {
+          setSyncStatus(`✅ 同步成功 — ${new Date(log.timestamp).toLocaleString('zh-CN')}`)
+        } else if (log.error) {
+          setSyncStatus(`❌ ${log.error}`)
+        }
+        setSyncSteps(log.steps ?? [])
+      } else if (result.lastSync) {
         setSyncStatus(`上次同步: ${new Date(result.lastSync as string).toLocaleString('zh-CN')}`)
       }
     })
   }, [])
 
-  useEffect(() => {
-    loadData()
-  }, [loadData])
+  useEffect(() => { init() }, [init])
 
   // 监听 storage 变化
   useEffect(() => {
     const listener = (changes: Record<string, chrome.storage.StorageChange>) => {
       if (changes.bookmarks) {
-        const items = changes.bookmarks.newValue as Bookmark[]
-        setBookmarks(items)
+        setBookmarks(changes.bookmarks.newValue as Bookmark[])
+        setFiltered(changes.bookmarks.newValue as Bookmark[])
       }
-      if (changes.lastSync) {
-        setSyncStatus(`上次同步: ${new Date(changes.lastSync.newValue as string).toLocaleString('zh-CN')}`)
+      // syncLog 变更时更新 UI
+      if (changes.syncLog) {
+        const log = changes.syncLog.newValue as SyncResult | undefined
+        if (log) {
+          if (log.success && log.timestamp) {
+            setSyncStatus(`✅ 同步成功 — ${new Date(log.timestamp).toLocaleString('zh-CN')}`)
+          } else if (log.error) {
+            setSyncStatus(`❌ ${log.error}`)
+          }
+          setSyncSteps(log.steps ?? [])
+        }
       }
     }
     chrome.storage.onChanged.addListener(listener)
@@ -55,27 +70,34 @@ function App() {
 
   // 搜索过滤
   useEffect(() => {
-    if (!search) {
-      setFiltered(bookmarks)
-      return
-    }
+    if (!search) { setFiltered(bookmarks); return }
     const q = search.toLowerCase()
-    setFiltered(
-      bookmarks.filter(
-        (b) =>
-          b.title.toLowerCase().includes(q) ||
-          b.url.toLowerCase().includes(q) ||
-          b.tags.some((t) => t.toLowerCase().includes(q))
-      )
-    )
+    setFiltered(bookmarks.filter(b =>
+      b.title.toLowerCase().includes(q) ||
+      b.url.toLowerCase().includes(q) ||
+      b.tags.some(t => t.toLowerCase().includes(q))
+    ))
   }, [search, bookmarks])
 
+  // 点击同步
   const handleSync = () => {
-    chrome.runtime.sendMessage({ type: 'SYNC_MANUAL' }, (result) => {
-      if (result?.timestamp) {
-        setSyncStatus(`上次同步: ${new Date(result.timestamp).toLocaleString('zh-CN')}`)
+    setSyncStatus('同步中...')
+    setSyncSteps([])
+    chrome.runtime.sendMessage({ type: 'SYNC_MANUAL' })
+  }
+
+  // 查看最新日志（popup 重新打开时自动执行，这里留作手动按钮）
+  const refreshLog = () => {
+    chrome.storage.local.get('syncLog', (r) => {
+      const log = r.syncLog as SyncResult | undefined
+      if (log) {
+        if (log.success && log.timestamp) {
+          setSyncStatus(`✅ 同步成功 — ${new Date(log.timestamp).toLocaleString('zh-CN')}`)
+        } else if (log.error) {
+          setSyncStatus(`❌ ${log.error}`)
+        }
+        setSyncSteps(log.steps ?? [])
       }
-      loadData()
     })
   }
 
@@ -109,7 +131,6 @@ function App() {
 
   return (
     <div style={{ width: 360, padding: '0.5rem', fontFamily: 'system-ui, sans-serif' }}>
-      {/* 未配置状态 */}
       {!isConfigured ? (
         <div style={{ textAlign: 'center', padding: '2rem 0.5rem' }}>
           <p style={{ color: '#555', marginBottom: '0.5rem' }}>
@@ -117,9 +138,6 @@ function App() {
           </p>
           <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>
             需要 GitHub Token、仓库 Owner 和名称
-          </p>
-          <p style={{ fontSize: '0.75rem', color: '#ccc', marginBottom: '1rem' }}>
-            {config ? `已读取配置: token=${config.githubToken ? '***' : '空'}, owner=${config.repoOwner || '空'}, repo=${config.repoName || '空'}` : '无法连接到后台服务'}
           </p>
           <button
             onClick={openOptions}
@@ -147,59 +165,37 @@ function App() {
               onChange={(e) => setSearch(e.target.value)}
               style={{ flex: 1, padding: '0.25rem 0.5rem' }}
             />
-            <button onClick={handleSaveCurrent} title="保存当前页面">
-              ＋
-            </button>
-            <button onClick={handleSync} title="同步">
-              ↻
-            </button>
-            <button onClick={openOptions} title="设置">
-              ⚙
-            </button>
+            <button onClick={handleSaveCurrent} title="保存当前页面">＋</button>
+            <button onClick={handleSync} title="同步">↻</button>
+            <button onClick={refreshLog} title="刷新日志" style={{fontSize:'0.7rem'}}>📋</button>
+            <button onClick={openOptions} title="设置">⚙</button>
           </div>
 
           {/* 书签列表 */}
           <div style={{ maxHeight: 400, overflowY: 'auto' }}>
             {filtered.length === 0 ? (
               <p style={{ color: '#888', textAlign: 'center', padding: '1rem' }}>
-                {search ? '未找到匹配的书签' : '暂无书签，点击 ＋ 保存当前页面'}
+                {search ? '未找到匹配的书签' : '暂无书签'}
               </p>
             ) : (
               filtered.map((b) => (
-                <div
-                  key={b.id}
-                  style={{
-                    padding: '0.375rem 0.25rem',
-                    borderBottom: '1px solid #eee',
-                  }}
-                >
+                <div key={b.id} style={{ padding: '0.375rem 0.25rem', borderBottom: '1px solid #eee' }}>
                   <a
                     href={b.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
-                      textDecoration: 'none',
-                      color: '#1a73e8',
-                      fontWeight: 500,
-                      fontSize: '0.875rem',
-                      display: 'block',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
+                      textDecoration: 'none', color: '#1a73e8', fontWeight: 500,
+                      fontSize: '0.875rem', display: 'block',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}
                   >
                     {b.title}
                   </a>
-                  <span
-                    style={{
-                      fontSize: '0.75rem',
-                      color: '#888',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      display: 'block',
-                    }}
-                  >
+                  <span style={{
+                    fontSize: '0.75rem', color: '#888',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
+                  }}>
                     {b.url}
                   </span>
                 </div>
@@ -209,17 +205,26 @@ function App() {
 
           {/* 同步状态栏 */}
           {syncStatus && (
-            <div
-              style={{
-                fontSize: '0.7rem',
-                color: '#aaa',
-                textAlign: 'center',
-                paddingTop: '0.25rem',
-                borderTop: '1px solid #eee',
-                marginTop: '0.25rem',
-              }}
-            >
+            <div style={{
+              fontSize: '0.75rem', color: '#555', textAlign: 'center',
+              paddingTop: '0.375rem', borderTop: '1px solid #eee', marginTop: '0.375rem',
+              fontWeight: 500,
+            }}>
               {syncStatus}
+            </div>
+          )}
+
+          {/* 调试步骤 */}
+          {syncSteps.length > 0 && (
+            <div style={{
+              fontSize: '0.65rem', background: '#f5f5f5', borderRadius: 4,
+              padding: '0.375rem 0.5rem', marginTop: '0.25rem',
+              maxHeight: 150, overflowY: 'auto', fontFamily: 'monospace',
+              lineHeight: 1.4,
+            }}>
+              {syncSteps.map((s, i) => (
+                <div key={i}>{i + 1}. {s}</div>
+              ))}
             </div>
           )}
         </>
