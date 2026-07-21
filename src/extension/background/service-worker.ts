@@ -75,6 +75,51 @@ function showResult(steps: string[], ok: boolean) {
   setTimeout(() => chrome.action.setBadgeText({ text: '' }), 5000)
 }
 
+/**
+ * 从浏览器原生书签重新导入，与已存储的书签合并，保存到 storage
+ * 以 URL 为匹配键，保留已存储书签的标签/文件夹等扩展数据
+ */
+async function refreshFromBrowser(): Promise<Bookmark[]> {
+  const { bookmarks: stored = [] } = await chrome.storage.local.get('bookmarks') as { bookmarks?: Bookmark[] }
+
+  const storedByUrl = new Map<string, Bookmark>()
+  for (const b of stored) {
+    storedByUrl.set(b.url, b)
+  }
+
+  const browser = await importFromBrowser()
+  const seenUrls = new Set<string>()
+  const merged: Bookmark[] = []
+
+  for (const bb of browser) {
+    seenUrls.add(bb.url)
+    const existing = storedByUrl.get(bb.url)
+    if (existing) {
+      // 保留已有书签（含标签等扩展数据），但同步标题变更
+      if (existing.title !== bb.title) {
+        existing.title = bb.title
+        existing.updatedAt = new Date().toISOString()
+      }
+      merged.push(existing)
+    } else {
+      // 浏览器新增的书签
+      merged.push(bb)
+    }
+  }
+
+  // 保留 storage 中存在但浏览器中没有的书签（通过扩展添加的）
+  for (const b of stored) {
+    if (!seenUrls.has(b.url)) {
+      merged.push(b)
+    }
+  }
+
+  merged.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+
+  await chrome.storage.local.set({ bookmarks: merged })
+  return merged
+}
+
 async function performSync(): Promise<SyncResult> {
   const steps: string[] = []
 
@@ -143,10 +188,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       performSync().then(sendResponse)
       return true
 
-    case 'GET_SYNC_LOG':
-      chrome.storage.local.get('syncLog', (result) => {
-        sendResponse(result.syncLog ?? null)
-      })
+    case 'REFRESH_BOOKMARKS':
+      refreshFromBrowser().then(sendResponse)
       return true
 
     case 'GET_CONFIG':

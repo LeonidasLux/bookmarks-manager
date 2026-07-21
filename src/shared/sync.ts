@@ -4,19 +4,16 @@ const BOOKMARK_PATH = 'bookmarks.json'
 
 /** 解码 GitHub API 返回的 base64 内容（兼容 SW 环境） */
 function decodeGitHubContent(encoded: string): string {
-  try {
-    // GitHub API 返回标准 base64，先尝试原生 atob
-    if (typeof atob === 'function') {
-      return atob(encoded)
-    }
-  } catch {
-    // atob 不可用，使用回退方案
-  }
+  // 注意：不能使用 atob()，它返回 Latin-1 字符串，会破坏 UTF-8 编码的中文等多字节字符
+  // 必须走字节 → TextDecoder 路径，保证非 ASCII 字符正确解码
   const bytes = base64ToBytesFallback(encoded)
   return new TextDecoder().decode(bytes)
 }
 
 function base64ToBytesFallback(base64: string): Uint8Array {
+  // GitHub Content API 返回的 base64 每 60 字符插入 \n，需先去除
+  base64 = base64.replace(/[\n\r]/g, '')
+
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
   const lookup = new Uint8Array(256)
   for (let j = 0; j < chars.length; j++) {

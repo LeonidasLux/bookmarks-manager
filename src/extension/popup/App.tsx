@@ -13,7 +13,7 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [syncStatus, setSyncStatus] = useState<string | null>(null)
 
-  // 启动时：加载配置 + 书签 + 同步日志
+  // 启动时：加载配置 + 书签 + 同步日志，并从浏览器刷新书签
   const init = useCallback(() => {
     chrome.runtime.sendMessage({ type: 'GET_CONFIG' }, (response) => {
       if (response?.config) setConfig(response.config)
@@ -26,7 +26,6 @@ function App() {
       setFiltered(items)
       setLoading(false)
 
-      // 恢复上次同步日志
       const log = result.syncLog as SyncResult | undefined
       if (log) {
         if (log.success && log.timestamp) {
@@ -38,6 +37,9 @@ function App() {
         setSyncStatus(`上次同步: ${new Date(result.lastSync as string).toLocaleString('zh-CN')}`)
       }
     })
+
+    // 从浏览器原生书签刷新，拾取用户在浏览器中书签管理器做的增删改
+    chrome.runtime.sendMessage({ type: 'REFRESH_BOOKMARKS' })
   }, [])
 
   useEffect(() => { init() }, [init])
@@ -49,7 +51,6 @@ function App() {
         setBookmarks(changes.bookmarks.newValue as Bookmark[])
         setFiltered(changes.bookmarks.newValue as Bookmark[])
       }
-      // syncLog 变更时更新 UI
       if (changes.syncLog) {
         const log = changes.syncLog.newValue as SyncResult | undefined
         if (log) {
@@ -78,22 +79,8 @@ function App() {
 
   // 点击同步
   const handleSync = () => {
-    setSyncStatus('同步中...')
+    setSyncStatus('🔄 同步中...')
     chrome.runtime.sendMessage({ type: 'SYNC_MANUAL' })
-  }
-
-  // 查看最新日志（popup 重新打开时自动执行，这里留作手动按钮）
-  const refreshLog = () => {
-    chrome.storage.local.get('syncLog', (r) => {
-      const log = r.syncLog as SyncResult | undefined
-      if (log) {
-        if (log.success && log.timestamp) {
-          setSyncStatus(`✅ 同步成功 — ${new Date(log.timestamp).toLocaleString('zh-CN')}`)
-        } else if (log.error) {
-          setSyncStatus(`❌ ${log.error}`)
-        }
-      }
-    })
   }
 
   const handleSaveCurrent = () => {
@@ -152,7 +139,7 @@ function App() {
       ) : (
         <>
           {/* 工具栏 */}
-          <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem', alignItems: 'center' }}>
             <input
               type="search"
               placeholder="搜索书签..."
@@ -160,9 +147,14 @@ function App() {
               onChange={(e) => setSearch(e.target.value)}
               style={{ flex: 1, padding: '0.25rem 0.5rem' }}
             />
+            <span style={{
+              fontSize: '0.75rem', color: '#888', whiteSpace: 'nowrap',
+              fontWeight: 500, minWidth: '2.5rem', textAlign: 'center',
+            }}>
+              {bookmarks.length}
+            </span>
             <button onClick={handleSaveCurrent} title="保存当前页面">＋</button>
             <button onClick={handleSync} title="同步">↻</button>
-            <button onClick={refreshLog} title="刷新日志" style={{fontSize:'0.7rem'}}>📋</button>
             <button onClick={openOptions} title="设置">⚙</button>
           </div>
 
