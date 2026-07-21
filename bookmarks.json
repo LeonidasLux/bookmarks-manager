@@ -1,16 +1,5 @@
 [
   {
-    "id": "test-20260721211026",
-    "title": "测试同步书签",
-    "url": "https://example.com/test-sync",
-    "folder": "/测试同步",
-    "tags": [
-      "test"
-    ],
-    "createdAt": "2026-07-21T21:10:26.641852Z",
-    "updatedAt": "2026-07-21T21:10:26.641868Z"
-  },
-  {
     "createdAt": "2025-05-18T13:55:20.000Z",
     "folder": "/书签栏/learning/frontend-组件、图标、资源库",
     "id": "bbbe4101-553e-48da-a27e-8d906c80fdb8",
