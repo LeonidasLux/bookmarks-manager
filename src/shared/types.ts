@@ -55,8 +55,8 @@ export interface PullDiffResult {
 
 export const DEFAULT_CONFIG: AppConfig = {
   githubToken: '',
-  repoOwner: 'LeonidasLux',
-  repoName: 'bookmarks-manager',
+  repoOwner: '',
+  repoName: '',
   syncIntervalHours: 6,
   autoSyncOnLoad: false,
   cleanEmptyFolders: true,
