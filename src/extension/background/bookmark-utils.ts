@@ -32,8 +32,31 @@ export async function getBrowserBookmarks(steps: string[]): Promise<Bookmark[]> 
 }
 
 /**
+ * Chrome 书签根目录的固定 ID（与语言无关）
+ * - '1' = 书签栏 / Bookmarks bar
+ * - '2' = 其他书签 / Other bookmarks
+ * - '3' = 移动设备书签 / Mobile bookmarks
+ */
+const ROOT_FOLDER_MAP: Record<string, string> = {
+  '1': '书签栏',
+  '2': '其他书签',
+  '3': '移动设备书签',
+}
+
+/** 反转 ROOT_FOLDER_MAP：名称 → ID */
+const ROOT_NAME_TO_ID: Record<string, string> = {}
+for (const [id, name] of Object.entries(ROOT_FOLDER_MAP)) {
+  ROOT_NAME_TO_ID[name] = id
+}
+
+/**
  * 将文件夹路径解析为 Chrome 书签文件夹节点 ID
  * 路径格式：'/书签栏/子文件夹'，不存在则逐级创建
+ *
+ * 第一级路径段会优先匹配 Chrome 的三个根目录：
+ * 1. 先按名称从 getTree() 结果中搜索
+ * 2. 若未命中，再用已知根目录名称映射兜底（兼容某些 Chrome 版本返回英文标题的场景）
+ * 3. 若都不是已知根，再以 parentId='1'（书签栏）作为父级创建
  */
 export async function resolveFolderPath(folderPath: string, steps: string[]): Promise<string> {
   const parts = folderPath.split('/').filter(p => p !== '')
@@ -42,17 +65,30 @@ export async function resolveFolderPath(folderPath: string, steps: string[]): Pr
     return '1'
   }
 
+  // 1. 按名称从根级别查找
   const tree = await chrome.bookmarks.getTree()
   const rootChildren = tree[0]?.children ?? []
   let current: chrome.bookmarks.BookmarkTreeNode | undefined = rootChildren.find(
     (n: chrome.bookmarks.BookmarkTreeNode) => !n.url && n.title === parts[0]
   )
 
+  // 2. 名称查找失败 → 用已知根目录名称映射兜底
+  if (!current) {
+    const knownRootId = ROOT_NAME_TO_ID[parts[0]]
+    if (knownRootId) {
+      current = rootChildren.find(
+        (n: chrome.bookmarks.BookmarkTreeNode) => n.id === knownRootId
+      )
+    }
+  }
+
+  // 3. 仍然未找到 → 以书签栏 (id='1') 为父级创建新文件夹
   if (!current) {
     steps.push(`创建一级文件夹: ${parts[0]}`)
     current = await chrome.bookmarks.create({ parentId: '1', title: parts[0] })
   }
 
+  // 逐级创建/查找子文件夹
   for (let i = 1; i < parts.length; i++) {
     const children: chrome.bookmarks.BookmarkTreeNode[] = await chrome.bookmarks.getChildren(current.id)
     let next: chrome.bookmarks.BookmarkTreeNode | undefined = children.find(

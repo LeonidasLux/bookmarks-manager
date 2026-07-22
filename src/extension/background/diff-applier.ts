@@ -8,6 +8,9 @@ export async function applyDiffsToBrowser(
   steps: string[],
   cleanEmptyFolders: boolean,
 ): Promise<void> {
+  // 收集所有被影响的原父文件夹 ID，在全部 diff 处理完后统一清理
+  const affectedParents = new Set<string>()
+
   for (const diff of diffs) {
     switch (diff.type) {
       case 'added': {
@@ -27,11 +30,8 @@ export async function applyDiffsToBrowser(
             const nodes: chrome.bookmarks.BookmarkTreeNode[] = await chrome.bookmarks.get(nodeId)
             const node = nodes[0]
             if (node) {
-              const oldParentId = node.parentId
+              if (node.parentId) affectedParents.add(node.parentId)
               await chrome.bookmarks.remove(nodeId)
-              if (cleanEmptyFolders && oldParentId) {
-                await removeEmptyAncestorFolders(oldParentId, steps)
-              }
             }
           } catch {
             // 节点可能已不存在，忽略
@@ -40,11 +40,8 @@ export async function applyDiffsToBrowser(
           const searchUrl = diff.local?.url ?? diff.remote.url
           const found = await chrome.bookmarks.search({ url: searchUrl })
           for (const node of found) {
-            const oldParentId = node.parentId
+            if (node.parentId) affectedParents.add(node.parentId)
             await chrome.bookmarks.remove(node.id)
-            if (cleanEmptyFolders && oldParentId) {
-              await removeEmptyAncestorFolders(oldParentId, steps)
-            }
           }
         }
         steps.push(`- browser: ${diff.remote.title}`)
@@ -70,9 +67,7 @@ export async function applyDiffsToBrowser(
             if (oldParentId && oldParentId !== newParentId) {
               await chrome.bookmarks.move(nodeId, { parentId: newParentId })
               steps.push(`→ browser: ${diff.remote.title} → ${diff.remote.folder}`)
-              if (cleanEmptyFolders) {
-                await removeEmptyAncestorFolders(oldParentId, steps)
-              }
+              affectedParents.add(oldParentId)
             }
           }
           steps.push(`~ browser: ${diff.remote.title}`)
@@ -81,6 +76,15 @@ export async function applyDiffsToBrowser(
         }
         break
       }
+    }
+  }
+
+  // 所有 diff 处理完毕后再统一清理空文件夹
+  // 避免在循环中逐个清理时错误移除后续 diff 所需的文件夹（例如：同一文件夹下的多个书签都被移走，
+  // 前一个 diff 的清理把共享的祖先文件夹删除了，导致后一个 diff 需要重建）
+  if (cleanEmptyFolders) {
+    for (const parentId of affectedParents) {
+      await removeEmptyAncestorFolders(parentId, steps)
     }
   }
 }
