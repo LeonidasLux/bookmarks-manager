@@ -1,6 +1,6 @@
 import type { AppConfig, Bookmark, BookmarkDiff } from '../../shared/types'
 import { DEFAULT_CONFIG } from '../../shared/types'
-import { SyncEngine } from '../../shared/sync'
+import { SyncEngine, normalizeFolderPath } from '../../shared/sync'
 
 let config: AppConfig = DEFAULT_CONFIG
 let syncEngine: SyncEngine | null = null
@@ -25,10 +25,10 @@ async function getBrowserBookmarks(steps: string[]): Promise<Bookmark[]> {
     for (const node of nodes) {
       if (node.url) {
         flat.push({
-          id: node.id, // 使用 Chrome 原生 ID（同一浏览器内稳定）
+          id: node.id,
           title: node.title,
           url: node.url,
-          folder: folderPath || '/',
+          folder: normalizeFolderPath(folderPath || '/'),
           tags: [],
           createdAt: new Date(node.dateAdded ?? Date.now()).toISOString(),
           updatedAt: new Date(node.dateAdded ?? Date.now()).toISOString(),
@@ -85,8 +85,107 @@ async function resolveFolderPath(folderPath: string, steps: string[]): Promise<s
   return current!.id
 }
 
+/** 根级别文件夹 ID，不可删除 */
+const ROOT_FOLDER_IDS = new Set(['0', '1', '2', '3'])
+
+/** 递归删除空父文件夹，从 parentId 向上遍历，直到遇到非空文件夹或根级别 */
+async function removeEmptyAncestorFolders(parentId: string, steps: string[]): Promise<void> {
+  let currentId = parentId
+  while (currentId && !ROOT_FOLDER_IDS.has(currentId)) {
+    const children = await chrome.bookmarks.getChildren(currentId)
+    if (children.length > 0) return // 还有子节点，停止
+    try {
+      const [node] = await chrome.bookmarks.get(currentId)
+      const grandParent = node?.parentId
+      await chrome.bookmarks.remove(currentId)
+      steps.push(`- folder: ${node?.title ?? currentId}`)
+      currentId = grandParent ?? ''
+    } catch {
+      return // 节点可能已不存在
+    }
+  }
+}
+
+/** 从书签节点向上遍历，构建文件夹路径 */
+async function getFolderPath(nodeId: string): Promise<string> {
+  const parts: string[] = []
+  let currentId: string | undefined = nodeId
+
+  while (currentId && !ROOT_FOLDER_IDS.has(currentId)) {
+    try {
+      const nodes: chrome.bookmarks.BookmarkTreeNode[] = await chrome.bookmarks.get(currentId)
+      const node = nodes[0]
+      if (!node) break
+      parts.unshift(node.title)
+      currentId = node.parentId
+    } catch {
+      break
+    }
+  }
+
+  return '/' + parts.join('/')
+}
+
+/** 计算应用全部 diffs 后会变空的文件夹路径列表 */
+async function computeEmptyFolders(diffs: BookmarkDiff[]): Promise<string[]> {
+  // 收集要删除或移走的书签的当前父文件夹
+  const parentsToCheck = new Set<string>()
+
+  for (const d of diffs) {
+    if (d.type === 'deleted' && d.local?.id) {
+      try {
+        const nodes: chrome.bookmarks.BookmarkTreeNode[] = await chrome.bookmarks.get(d.local.id)
+        const node = nodes[0]
+        if (node?.parentId && !ROOT_FOLDER_IDS.has(node.parentId)) {
+          parentsToCheck.add(node.parentId)
+        }
+      } catch { /* 忽略 */ }
+    } else if (d.type === 'modified' && d.changes?.some(c => c.field === 'folder') && d.local?.id) {
+      try {
+        const nodes: chrome.bookmarks.BookmarkTreeNode[] = await chrome.bookmarks.get(d.local.id)
+        const node = nodes[0]
+        if (node?.parentId && !ROOT_FOLDER_IDS.has(node.parentId)) {
+          parentsToCheck.add(node.parentId)
+        }
+      } catch { /* 忽略 */ }
+    }
+  }
+
+  if (parentsToCheck.size === 0) return []
+
+  // 收集所有会被删除或移走的 URL（用于判断子节点是否全部移除）
+  const removedUrls = new Set<string>()
+  for (const d of diffs) {
+    if (d.type === 'deleted') {
+      removedUrls.add(d.local?.url ?? d.remote.url)
+    } else if (d.type === 'modified' && d.changes?.some(c => c.field === 'folder')) {
+      removedUrls.add(d.local?.url ?? d.remote.url)
+    }
+  }
+
+  // 检查每个父文件夹是否会变空
+  const emptyPaths: string[] = []
+  for (const parentId of parentsToCheck) {
+    const children: chrome.bookmarks.BookmarkTreeNode[] = await chrome.bookmarks.getChildren(parentId)
+    const hasSubfolders = children.some(c => !c.url)
+    if (hasSubfolders) continue
+
+    const allGone = children.every(c => {
+      if (!c.url) return true
+      return removedUrls.has(c.url)
+    })
+
+    if (allGone && children.some(c => c.url)) {
+      const path = await getFolderPath(parentId)
+      emptyPaths.push(path)
+    }
+  }
+
+  return emptyPaths.sort()
+}
+
 /** 将差异应用到浏览器原生书签 */
-async function applyDiffsToBrowser(diffs: BookmarkDiff[], steps: string[]): Promise<void> {
+async function applyDiffsToBrowser(diffs: BookmarkDiff[], steps: string[], cleanEmptyFolders: boolean): Promise<void> {
   for (const diff of diffs) {
     switch (diff.type) {
       case 'added': {
@@ -100,31 +199,65 @@ async function applyDiffsToBrowser(diffs: BookmarkDiff[], steps: string[]): Prom
         break
       }
       case 'deleted': {
-        const searchUrl = diff.local?.url ?? diff.remote.url
-        const found = await chrome.bookmarks.search({ url: searchUrl })
-        for (const node of found) {
-          await chrome.bookmarks.remove(node.id)
+        const nodeId = diff.local?.id
+        if (nodeId) {
+          try {
+            const nodes: chrome.bookmarks.BookmarkTreeNode[] = await chrome.bookmarks.get(nodeId)
+            const node = nodes[0]
+            if (node) {
+              const oldParentId = node.parentId
+              await chrome.bookmarks.remove(nodeId)
+              if (cleanEmptyFolders && oldParentId) {
+                await removeEmptyAncestorFolders(oldParentId, steps)
+              }
+            }
+          } catch {
+            // 节点可能已不存在，忽略
+          }
+        } else {
+          // 兜底：无 local id 时按 url 搜索
+          const searchUrl = diff.local?.url ?? diff.remote.url
+          const found = await chrome.bookmarks.search({ url: searchUrl })
+          for (const node of found) {
+            const oldParentId = node.parentId
+            await chrome.bookmarks.remove(node.id)
+            if (cleanEmptyFolders && oldParentId) {
+              await removeEmptyAncestorFolders(oldParentId, steps)
+            }
+          }
         }
         steps.push(`- browser: ${diff.remote.title}`)
         break
       }
       case 'modified': {
-        const searchUrl = diff.local?.url ?? diff.remote.url
-        const found = await chrome.bookmarks.search({ url: searchUrl })
-        if (found.length > 0) {
-          const node = found[0]
-          await chrome.bookmarks.update(node.id, {
+        const nodeId = diff.local?.id
+        if (!nodeId) break
+        try {
+          const nodes: chrome.bookmarks.BookmarkTreeNode[] = await chrome.bookmarks.get(nodeId)
+          const node = nodes[0]
+          if (!node) break
+
+          await chrome.bookmarks.update(nodeId, {
             title: diff.remote.title,
             url: diff.remote.url,
           })
-          // 文件夹路径变更时，移动到新文件夹
+
           const hasFolderChange = diff.changes?.some(c => c.field === 'folder')
           if (hasFolderChange) {
+            const oldParentId = node.parentId
             const newParentId = await resolveFolderPath(diff.remote.folder || '/', steps)
-            await chrome.bookmarks.move(node.id, { parentId: newParentId })
-            steps.push(`→ browser: ${diff.remote.title} → ${diff.remote.folder}`)
+            // 仅在不同文件夹时才执行移动和清理
+            if (oldParentId && oldParentId !== newParentId) {
+              await chrome.bookmarks.move(nodeId, { parentId: newParentId })
+              steps.push(`→ browser: ${diff.remote.title} → ${diff.remote.folder}`)
+              if (cleanEmptyFolders) {
+                await removeEmptyAncestorFolders(oldParentId, steps)
+              }
+            }
           }
           steps.push(`~ browser: ${diff.remote.title}`)
+        } catch {
+          // 节点可能已不存在，忽略
         }
         break
       }
@@ -195,8 +328,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           const local = await getBrowserBookmarks(steps)
           const diffs = SyncEngine.computeDiff(remote, local)
           steps.push(`差异: 新增${diffs.filter(d => d.type === 'added').length} / 删除${diffs.filter(d => d.type === 'deleted').length} / 修改${diffs.filter(d => d.type === 'modified').length}`)
+
+          // 计算可能变空的文件夹
+          const emptyFolders = await computeEmptyFolders(diffs)
+
           showResult(steps, true)
-          sendResponse({ success: true, timestamp: new Date().toISOString(), diffs, steps })
+          sendResponse({ success: true, timestamp: new Date().toISOString(), diffs, emptyFolders, steps })
         } catch (e) {
           steps.push(`❌ ${(e as Error).message}`)
           showResult(steps, false)
@@ -211,7 +348,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         const steps: string[] = []
         try {
           const selectedDiffs = msg.selectedDiffs as BookmarkDiff[]
-          await applyDiffsToBrowser(selectedDiffs, steps)
+          const cleanEmptyFolders = msg.cleanEmptyFolders as boolean
+          await applyDiffsToBrowser(selectedDiffs, steps, cleanEmptyFolders)
           steps.push(`完成: 应用 ${selectedDiffs.length} 项`)
           showResult(steps, true)
           const timestamp = new Date().toISOString()

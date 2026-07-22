@@ -2,6 +2,13 @@ import type { Bookmark, AppConfig, BookmarkDiff } from './types'
 
 const BOOKMARK_PATH = 'bookmarks.json'
 
+/** 规范化文件夹路径：去掉多余斜杠，保证以单斜杠开头 */
+export function normalizeFolderPath(path: string): string {
+  if (!path) return '/'
+  const parts = path.split('/').filter(p => p !== '')
+  return '/' + parts.join('/')
+}
+
 /** 解码 GitHub API 返回的 base64 内容（兼容 SW 环境） */
 function decodeGitHubContent(encoded: string): string {
   const bytes = base64ToBytesFallback(encoded)
@@ -152,7 +159,7 @@ export class SyncEngine {
         matchedLocal.add(match.id)
         const changes: BookmarkDiff['changes'] = []
         if (r.title !== match.title) changes.push({ field: 'title', from: match.title, to: r.title })
-        if (r.folder !== match.folder) changes.push({ field: 'folder', from: match.folder, to: r.folder })
+        if (normalizeFolderPath(r.folder) !== normalizeFolderPath(match.folder)) changes.push({ field: 'folder', from: match.folder, to: r.folder })
         if (changes.length > 0) {
           diffs.push({ type: 'modified', remote: r, local: match, changes })
         }

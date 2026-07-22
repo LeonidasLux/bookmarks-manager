@@ -1,13 +1,7 @@
-# Agent skills
+# Agent
 
-### Issue tracker
+### 开发规则
 
-Issues are tracked in GitHub Issues. See `docs/agents/issue-tracker.md`.
-
-### Domain docs
-
-Single-context — one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
-
-### 构建
-
-每次完整修改之后，运行 `pnpm build` 构建项目，确保代码可以正常编译。
+- 每次完整修改之后，运行 `pnpm build` 构建项目，确保代码可以正常编译。
+- 独立功能拆分单独的hooks文件实现
+- 不要全部UI写在一个文件里，合理拆分组件

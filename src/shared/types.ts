@@ -17,6 +17,8 @@ export interface AppConfig {
   syncIntervalHours: number
   /** 扩展加载时是否自动同步书签到 GitHub */
   autoSyncOnLoad: boolean
+  /** 应用差异后是否清理空文件夹 */
+  cleanEmptyFolders: boolean
 }
 
 export interface SyncResult {
@@ -46,6 +48,8 @@ export interface PullDiffResult {
   success: boolean
   timestamp: string
   diffs: BookmarkDiff[]
+  /** 应用所有差异后可能变空的文件夹路径列表 */
+  emptyFolders?: string[]
   error?: string
 }
 
@@ -55,4 +59,5 @@ export const DEFAULT_CONFIG: AppConfig = {
   repoName: 'bookmarks-manager',
   syncIntervalHours: 6,
   autoSyncOnLoad: false,
+  cleanEmptyFolders: true,
 }

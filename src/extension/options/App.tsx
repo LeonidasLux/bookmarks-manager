@@ -104,6 +104,22 @@ function App() {
         </p>
       </div>
 
+      <div style={{ marginBottom: '1rem' }}>
+        <label
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+        >
+          <input
+            type="checkbox"
+            checked={config.cleanEmptyFolders}
+            onChange={(e) => setConfig({ ...config, cleanEmptyFolders: e.target.checked })}
+          />
+          <span style={{ fontWeight: 500 }}>应用差异后自动清理空文件夹</span>
+        </label>
+        <p style={{ fontSize: '0.8rem', color: '#888', margin: '0.25rem 0 0 1.5rem' }}>
+          删除或移走书签后，若原文件夹变空则自动删除该文件夹
+        </p>
+      </div>
+
       <button
         onClick={save}
         style={{
