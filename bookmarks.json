@@ -1,335 +1,92 @@
 [
   {
-    "createdAt": "2026-07-03T07:00:12.531Z",
-    "folder": "/书签栏/gerrit",
-    "id": "482fc05d-2c1b-42bb-b182-a589525313f3",
-    "tags": [],
-    "title": "easy-develop-work | gerrit.zte Code Review",
-    "updatedAt": "2026-07-03T07:00:12.531Z",
-    "url": "https://gerrit.zte.com.cn/#/q/project:DT-JS/Open-Code/easy-develop-work"
-  },
-  {
-    "createdAt": "2026-06-27T08:14:34.142Z",
-    "folder": "/书签栏/gerrit",
-    "id": "5f835c76-cb20-410a-a48b-58d0083d29fe",
-    "tags": [],
-    "title": "project:ZXITP/UAC100/UAC_CJ506_MngWeb | gerrit.zte Code Review",
-    "updatedAt": "2026-06-27T08:14:34.142Z",
-    "url": "https://gerrit.zte.com.cn/#/q/project:ZXITP/UAC100/UAC_CJ506_MngWeb"
-  },
-  {
-    "createdAt": "2026-06-24T02:48:03.430Z",
-    "folder": "/其他书签",
-    "id": "af75c95d-62f1-434f-a066-80151cd4648e",
-    "tags": [],
-    "title": "OpenClaw Control 19001",
-    "updatedAt": "2026-06-24T02:48:03.430Z",
-    "url": "http://127.0.0.1:19001/chat?session=agent%3Adev%3Amain"
-  },
-  {
-    "createdAt": "2026-06-22T03:22:00.551Z",
-    "folder": "/书签栏/gerrit",
-    "id": "7217577e-6fcf-43b4-a213-10e589f452c0",
-    "tags": [],
-    "title": "zte-sec-uac-web",
-    "updatedAt": "2026-06-22T03:22:00.551Z",
-    "url": "https://gerrit.zte.com.cn/#/q/project:ZXITP/UAC100/zte-sec-uac-web"
-  },
-  {
-    "createdAt": "2026-06-15T02:08:23.190Z",
-    "folder": "/书签栏/gerrit",
-    "id": "318c4b1a-9b9d-4588-a11a-a9ba8f71da51",
-    "tags": [],
-    "title": "0668001277/voyage",
-    "updatedAt": "2026-06-15T02:08:23.190Z",
-    "url": "https://gitlab.zte.com.cn:446/person/#/q/project:0668001277/voyage"
-  },
-  {
-    "createdAt": "2026-05-25T12:09:26.636Z",
-    "folder": "/书签栏/gerrit",
-    "id": "ec3e0d9b-ff7d-4922-8fff-c801ca528211",
-    "tags": [],
-    "title": "ZXBMT/UCS100/portal",
-    "updatedAt": "2026-05-25T12:09:26.636Z",
-    "url": "https://gerrit.zte.com.cn/#/q/project:ZXBMT/UCS100/portal"
-  },
-  {
-    "createdAt": "2026-05-14T07:15:20.017Z",
-    "folder": "/其他书签",
-    "id": "00682e02-c5bf-457e-868c-c49fc2da2373",
-    "tags": [],
-    "title": "内部工具+模型问题和诉求清单 - 开发五AI探索空间 - iCenter",
-    "updatedAt": "2026-05-14T07:15:20.017Z",
-    "url": "https://i.zte.com.cn/#/shared/e7f5b96c563d46df9b67e3201bc9e610/wiki/page/4be00731439f11f1bec2e3f0b9e3a440/view"
-  },
-  {
-    "createdAt": "2026-05-12T06:43:13.862Z",
-    "folder": "/书签栏/gerrit",
-    "id": "15a8619b-8e45-4c89-9b73-38db2c0f3d0f",
-    "tags": [],
-    "title": "project:0668000615/hermes-ui | gitlab.zte Code Review",
-    "updatedAt": "2026-05-12T06:43:13.862Z",
-    "url": "https://gitlab.zte.com.cn/person/#/q/project:0668000615/hermes-ui"
-  },
-  {
-    "createdAt": "2026-05-08T02:03:31.481Z",
-    "folder": "/书签栏/gerrit",
-    "id": "86504d85-29e8-4f9b-8ffa-91af30cf6ca2",
-    "tags": [],
-    "title": "zte-sec-uac-iportalbff",
-    "updatedAt": "2026-05-08T02:03:31.481Z",
-    "url": "https://gerrit.zte.com.cn/#/q/project:ZXITP/UAC100/zte-sec-uac-iportalbff"
-  },
-  {
-    "createdAt": "2026-05-08T02:02:55.961Z",
-    "folder": "/书签栏/gerrit",
-    "id": "fcd6b824-9a4b-4750-b020-9a4acfadbc93",
-    "tags": [],
-    "title": "zte-sec-uac-iportal",
-    "updatedAt": "2026-05-08T02:02:55.961Z",
-    "url": "https://gerrit.zte.com.cn/#/q/project:ZXITP/UAC100/zte-sec-uac-iportal"
-  },
-  {
-    "createdAt": "2026-03-23T01:28:19.162Z",
-    "folder": "/书签栏",
-    "id": "ecda1297-893f-4460-b69d-f096e44e0df1",
-    "tags": [],
-    "title": "主页",
-    "updatedAt": "2026-03-23T01:28:19.162Z",
-    "url": "https://i.zte.com.cn/index/ispace/#/space/857231f2d76d4785b6da48ee8256f5e8/wiki/page/f310783d6c534f4f931fac8f564e2193/view"
-  },
-  {
-    "createdAt": "2026-03-21T14:14:51.139Z",
-    "folder": "/书签栏/tools",
-    "id": "468b06c3-3308-4ab4-83d5-c1fee8523d22",
-    "tags": [],
-    "title": "在线工具 - 你的工具箱",
-    "updatedAt": "2026-03-21T14:14:51.139Z",
-    "url": "https://tool.lu/tool/"
-  },
-  {
-    "createdAt": "2025-09-05T01:35:41.898Z",
-    "folder": "/书签栏",
-    "id": "52d62b9c-274e-44e0-a37f-a6cd8323bf1e",
-    "tags": [],
-    "title": "工作台",
-    "updatedAt": "2025-09-05T01:35:41.898Z",
-    "url": "https://i.zte.com.cn/index/home"
-  },
-  {
-    "createdAt": "2025-07-08T16:23:34.000Z",
-    "folder": "/书签栏/tools/不常用",
-    "id": "ab0485b2-017e-4553-a8ae-85d15c56dd4e",
-    "tags": [],
-    "title": "压缩 PowerPoint 文件，在线 PPT 压缩器 | YouCompress",
-    "updatedAt": "2025-07-08T16:23:34.000Z",
-    "url": "https://www.youcompress.com/zh-cn/powerpoint/"
-  },
-  {
-    "createdAt": "2025-05-21T02:59:12.000Z",
-    "folder": "/书签栏/tools",
-    "id": "748c356d-62cf-43dd-bc53-fe0af01a1c1f",
-    "tags": [],
-    "title": "JSON压缩一行，JSON压缩，JSON转义工具",
-    "updatedAt": "2025-05-21T02:59:12.000Z",
-    "url": "https://www.sojson.com/yasuoyihang.html"
-  },
-  {
-    "createdAt": "2025-05-18T05:13:25.000Z",
-    "folder": "/书签栏/tools/不常用",
-    "id": "8e02ca16-eabd-403e-ba8e-2d4e7fa2af63",
-    "tags": [],
-    "title": "机佬导航页面，电脑显卡天梯图啥的",
-    "updatedAt": "2025-05-18T05:13:25.000Z",
-    "url": "https://www.jldzz.cn/"
-  },
-  {
-    "createdAt": "2025-03-31T12:36:33.000Z",
-    "folder": "/书签栏/xydt/低代码团队/gerrit",
-    "id": "d7cbb015-840a-43f3-9d4c-dd8ea60fda24",
-    "tags": [],
-    "title": "owner:\"袁龙辉 0668001277 <yuan.longhui@xydigit.com>\" | gerrit.zte Code Review",
-    "updatedAt": "2025-03-31T12:36:33.000Z",
-    "url": "https://gerrit.zte.com.cn/#/q/owner:%22%25E8%25A2%2581%25E9%25BE%2599%25E8%25BE%2589+0668001277+%253Cyuan.longhui%2540xydigit.com%253E%22"
-  },
-  {
-    "createdAt": "2025-03-31T04:29:33.043Z",
-    "folder": "/移动设备书签",
-    "id": "8911f133-d24c-43e0-b815-65110bca546d",
-    "tags": [],
-    "title": "免抠图片网|免抠素材|透明背景图片|免费图片素材|png图片|透明背景素材|设计素材",
-    "updatedAt": "2025-03-31T04:29:33.043Z",
-    "url": "https://miankoutupian.com/"
-  },
-  {
-    "createdAt": "2025-03-22T17:12:31.000Z",
-    "folder": "/书签栏/tools",
-    "id": "24d15375-c1c4-4043-ab7c-09217b87144a",
-    "tags": [],
-    "title": "Excalidraw 画图神器",
-    "updatedAt": "2025-03-22T17:12:31.000Z",
-    "url": "https://excalidraw.com/"
-  },
-  {
-    "createdAt": "2025-02-27T01:52:00.000Z",
-    "folder": "/书签栏/tools/常用工具",
-    "id": "2baad9d4-0572-4689-94a1-dccd0ac44b7a",
-    "tags": [],
-    "title": "YAML、YML在线编辑器(格式化校验)-BeJSON.com",
-    "updatedAt": "2025-02-27T01:52:00.000Z",
-    "url": "https://www.bejson.com/validators/yaml_editor/"
-  },
-  {
-    "createdAt": "2025-01-11T18:19:51.000Z",
-    "folder": "/书签栏/tools/常用工具",
-    "id": "9447e4b0-170b-4b24-a0de-e04d6d9630ee",
-    "tags": [],
+    "id": "2189",
     "title": "图片转格式",
+    "url": "https://squoosh.app/",
+    "folder": "//书签栏/tools/常用工具",
+    "tags": [],
+    "createdAt": "2025-01-11T18:19:51.000Z",
     "updatedAt": "2025-01-11T18:19:51.000Z",
-    "url": "https://squoosh.app/"
+    "source": "browser"
   },
   {
-    "createdAt": "2024-12-19T03:00:10.000Z",
-    "folder": "/书签栏/tools/常用工具",
-    "id": "8837d826-4024-42fe-84c0-5d77421dbc7e",
-    "tags": [],
-    "title": "Unicode编码转换 - 站长工具",
-    "updatedAt": "2024-12-19T03:00:10.000Z",
-    "url": "https://tool.chinaz.com/tools/unicode.aspx"
-  },
-  {
-    "createdAt": "2024-10-25T15:35:32.000Z",
-    "folder": "/书签栏/tools/常用工具",
-    "id": "0860b8de-fbf9-46dd-9f16-970bad838161",
-    "tags": [],
-    "title": "即时工具-致力打造即用即走型在线工具箱",
-    "updatedAt": "2024-10-25T15:35:32.000Z",
-    "url": "https://www.67tool.com/"
-  },
-  {
-    "createdAt": "2024-07-12T07:00:20.000Z",
-    "folder": "/书签栏/xydt/低代码团队/gerrit",
-    "id": "6591735e-32e2-4cd4-8752-dcdd5118cda8",
-    "tags": [],
-    "title": "My Reviews",
-    "updatedAt": "2024-07-12T07:00:20.000Z",
-    "url": "https://gerrit.zte.com.cn/#/dashboard/self"
-  },
-  {
-    "createdAt": "2024-07-04T06:05:20.000Z",
-    "folder": "/书签栏/tools/常用工具",
-    "id": "dc840e4f-789d-475d-8a5f-09c0f5a6e22e",
-    "tags": [],
-    "title": "文字识别",
-    "updatedAt": "2024-07-04T06:05:20.000Z",
-    "url": "https://catocr.com/#/"
-  },
-  {
-    "createdAt": "2024-05-25T08:59:55.000Z",
-    "folder": "/书签栏/tools",
-    "id": "50e0b95e-2336-43f3-af85-4feef5dad2e8",
-    "tags": [],
-    "title": "JSON格式化查看工具",
-    "updatedAt": "2024-05-25T08:59:55.000Z",
-    "url": "chrome-extension://pkgccpejnmalmdinmhkkfafefagiiiad/json-format/index.html"
-  },
-  {
-    "createdAt": "2024-05-21T11:13:18.000Z",
-    "folder": "/书签栏/tools/不常用",
-    "id": "c1976b39-762c-423a-921c-85e0838f8ab5",
-    "tags": [],
-    "title": "ColorDrop",
-    "updatedAt": "2024-05-21T11:13:18.000Z",
-    "url": "https://colordrop.io/search/?s=blue"
-  },
-  {
-    "createdAt": "2024-05-21T11:13:15.000Z",
-    "folder": "/书签栏/tools/常用工具",
-    "id": "0a907b66-5145-4ca6-a254-490a546164eb",
-    "tags": [],
-    "title": "图片转 Base64 编码 - 在线图像BASE64编码",
-    "updatedAt": "2024-05-21T11:13:15.000Z",
-    "url": "https://www.bchrt.com/tools/image-to-base64/"
-  },
-  {
-    "createdAt": "2024-05-21T11:12:57.000Z",
-    "folder": "/书签栏/tools/常用工具",
-    "id": "b6359849-a6b6-433f-8856-9669c9f15b49",
-    "tags": [],
-    "title": "字数计算 - 在线工具",
-    "updatedAt": "2024-05-21T11:12:57.000Z",
-    "url": "https://tool.lu/wordcount/"
-  },
-  {
-    "createdAt": "2024-04-16T05:46:42.000Z",
-    "folder": "/书签栏/tools",
-    "id": "aae098d6-0261-4e32-b66c-a5b21e89c377",
-    "tags": [],
-    "title": "greasyfork.org",
-    "updatedAt": "2024-04-16T05:46:42.000Z",
-    "url": "https://greasyfork.org/zh-CN/users/1288794-%E8%A2%81%E9%BE%99%E8%BE%89?locale_override=1"
-  },
-  {
-    "createdAt": "2024-03-31T08:02:02.000Z",
-    "folder": "/书签栏/tools",
-    "id": "75947a9e-d780-4555-92d9-e68dca91e09f",
-    "tags": [],
-    "title": "JSON比对工具",
-    "updatedAt": "2024-03-31T08:02:02.000Z",
-    "url": "chrome-extension://pkgccpejnmalmdinmhkkfafefagiiiad/json-diff/index.html"
-  },
-  {
-    "createdAt": "2024-03-23T16:26:44.000Z",
-    "folder": "/书签栏/xydt/低代码团队/gerrit",
-    "id": "dd732d9a-c943-4baa-bc02-8f4697b5c743",
-    "tags": [],
-    "title": "My Reviews | gitlab.zte Code Review",
-    "updatedAt": "2024-03-23T16:26:44.000Z",
-    "url": "https://gitlab.zte.com.cn:446/person/#/dashboard/self"
-  },
-  {
-    "createdAt": "2023-04-11T14:45:16.000Z",
-    "folder": "/书签栏/tools",
-    "id": "8247ee30-cb62-407a-8372-1f9e9e5c643a",
-    "tags": [],
+    "id": "2179",
     "title": "百度翻译-200种语言互译、沟通全世界！",
+    "url": "https://fanyi.baidu.com/?aldtype=16047#auto/zh",
+    "folder": "//书签栏/tools",
+    "tags": [],
+    "createdAt": "2023-04-11T14:45:16.000Z",
     "updatedAt": "2023-04-11T14:45:16.000Z",
-    "url": "https://fanyi.baidu.com/?aldtype=16047#auto/zh"
+    "source": "browser"
   },
   {
-    "createdAt": "2023-01-07T13:36:31.000Z",
-    "folder": "/书签栏/tools/不常用",
-    "id": "2243c46a-148c-4967-a75d-ee703548c29a",
+    "id": "2177",
+    "title": "Excalidraw 画图神器",
+    "url": "https://excalidraw.com/",
+    "folder": "//书签栏/tools",
     "tags": [],
-    "title": "美图秀秀-图片编辑",
-    "updatedAt": "2023-01-07T13:36:31.000Z",
-    "url": "https://pc.meitu.com/image/edit/?from=icon"
+    "createdAt": "2025-03-22T17:12:31.000Z",
+    "updatedAt": "2025-03-22T17:12:31.000Z",
+    "source": "browser"
   },
   {
-    "createdAt": "2022-01-15T09:38:59.000Z",
-    "folder": "/书签栏/tools/不常用",
-    "id": "83f627f2-b0db-46c8-befe-7ae731faef39",
+    "id": "3310",
+    "title": "My Reviews",
+    "url": "https://gerrit.zte.com.cn/#/dashboard/self",
+    "folder": "//书签栏/gerrit",
     "tags": [],
-    "title": "首页 - Canva可画",
-    "updatedAt": "2022-01-15T09:38:59.000Z",
-    "url": "https://www.canva.cn/"
+    "createdAt": "2026-05-07T07:09:45.435Z",
+    "updatedAt": "2026-05-07T07:09:45.435Z",
+    "source": "browser"
   },
   {
-    "createdAt": "2021-12-07T07:43:36.000Z",
-    "folder": "/书签栏/tools/不常用",
-    "id": "89d003ca-8e25-4df5-a2a6-7c7dae663fbe",
+    "id": "3311",
+    "title": "owner:\"袁龙辉 0668001277 <yuan.longhui@xydigit.com>\" | gerrit.zte Code Review",
+    "url": "https://gerrit.zte.com.cn/#/q/owner:%22%25E8%25A2%2581%25E9%25BE%2599%25E8%25BE%2589+0668001277+%253Cyuan.longhui%2540xydigit.com%253E%22",
+    "folder": "//书签栏/gerrit",
     "tags": [],
-    "title": "ProcessOn流程图等作图",
-    "updatedAt": "2021-12-07T07:43:36.000Z",
-    "url": "https://www.processon.com/;jsessionid=B4E382823FA1793536CB1F4D04E89A95.jvm1"
+    "createdAt": "2026-05-07T07:09:45.435Z",
+    "updatedAt": "2026-05-07T07:09:45.435Z",
+    "source": "browser"
   },
   {
-    "createdAt": "2021-11-01T04:17:34.000Z",
-    "folder": "/书签栏/tools/常用工具",
-    "id": "9052857f-3cb7-4d29-9e6b-99ab890f6b17",
+    "id": "3243",
+    "title": "主页",
+    "url": "https://i.zte.com.cn/index/ispace/#/space/857231f2d76d4785b6da48ee8256f5e8/wiki/page/f310783d6c534f4f931fac8f564e2193/view",
+    "folder": "//书签栏",
     "tags": [],
-    "title": "在线进制转换",
-    "updatedAt": "2021-11-01T04:17:34.000Z",
-    "url": "https://tool.oschina.net/hexconvert/"
+    "createdAt": "2026-03-23T01:28:19.162Z",
+    "updatedAt": "2026-03-23T01:28:19.162Z",
+    "source": "browser"
+  },
+  {
+    "id": "2992",
+    "title": "工作台",
+    "url": "https://i.zte.com.cn/index/home",
+    "folder": "//书签栏",
+    "tags": [],
+    "createdAt": "2025-09-05T01:35:41.898Z",
+    "updatedAt": "2025-09-05T01:35:41.898Z",
+    "source": "browser"
+  },
+  {
+    "id": "3347",
+    "title": "内部工具+模型问题和诉求清单 - 开发五AI探索空间 - iCenter",
+    "url": "https://i.zte.com.cn/#/shared/e7f5b96c563d46df9b67e3201bc9e610/wiki/page/4be00731439f11f1bec2e3f0b9e3a440/view",
+    "folder": "//其他书签",
+    "tags": [],
+    "createdAt": "2026-05-14T07:15:20.017Z",
+    "updatedAt": "2026-05-14T07:15:20.017Z",
+    "source": "browser"
+  },
+  {
+    "id": "1471",
+    "title": "免抠图片网|免抠素材|透明背景图片|免费图片素材|png图片|透明背景素材|设计素材",
+    "url": "https://miankoutupian.com/",
+    "folder": "//移动设备书签",
+    "tags": [],
+    "createdAt": "2025-03-31T04:29:33.043Z",
+    "updatedAt": "2025-03-31T04:29:33.043Z",
+    "source": "browser"
   }
 ]
