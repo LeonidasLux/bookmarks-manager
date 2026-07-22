@@ -6,9 +6,11 @@ const mockChrome = {
     openOptionsPage: () => {},
     sendMessage: (_msg: unknown, cb?: (res: unknown) => void) => {
       if (cb) cb({})
+      return Promise.resolve()
     },
     onMessage: {
       addListener: () => {},
+      removeListener: () => {},
     },
     onInstalled: {
       addListener: () => {},
@@ -21,6 +23,11 @@ const mockChrome = {
       },
       set: (_items: unknown, cb?: () => void) => {
         if (cb) cb()
+        return Promise.resolve()
+      },
+      remove: (_keys: unknown, cb?: () => void) => {
+        if (cb) cb()
+        return Promise.resolve()
       },
     },
   },
@@ -47,6 +54,21 @@ const mockChrome = {
     setBadgeText: () => {},
     setBadgeBackgroundColor: () => {},
     setTitle: () => {},
+    openPopup: () => Promise.resolve(),
+  },
+  commands: {
+    getAll: (cb?: (cmds: chrome.commands.Command[]) => void) => {
+      const cmds: chrome.commands.Command[] = [
+        { name: '_execute_action', description: 'Open popup', shortcut: '' },
+        { name: 'save-bookmark', description: '保存当前页面到书签', shortcut: 'Alt+B' },
+      ]
+      if (cb) cb(cmds)
+      return Promise.resolve(cmds)
+    },
+    onCommand: {
+      addListener: () => {},
+      removeListener: () => {},
+    },
   },
 }
 

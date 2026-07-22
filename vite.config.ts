@@ -27,6 +27,15 @@ export default defineConfig({
           page: 'src/extension/options/index.html',
           open_in_tab: true,
         },
+        commands: {
+          'save-bookmark': {
+            suggested_key: {
+              default: 'Alt+B',
+              mac: 'Command+Shift+B',
+            },
+            description: '保存当前页面到书签',
+          },
+        },
         background: {
           service_worker: 'src/extension/background/service-worker.ts',
           type: 'module',

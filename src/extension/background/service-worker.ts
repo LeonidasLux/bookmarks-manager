@@ -19,6 +19,23 @@ function loadConfig(): Promise<AppConfig> {
   })
 }
 
+// ---- 快捷键：保存书签 ----
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'save-bookmark') {
+    await chrome.storage.local.set({ pendingSaveBookmark: true })
+    // 通知可能已打开的 popup
+    chrome.runtime.sendMessage({ type: 'TRIGGER_SAVE_BOOKMARK' }).catch(() => {
+      // popup 未打开，走 openPopup 流程
+    })
+    try {
+      await chrome.action.openPopup()
+    } catch {
+      // openPopup 失败（如无活跃窗口），pendingSaveBookmark 已写入 storage
+      // 下次点击扩展图标时 popup 会自动触发保存流程
+    }
+  }
+})
+
 // ---- 初始化 ----
 loadConfig()
 
