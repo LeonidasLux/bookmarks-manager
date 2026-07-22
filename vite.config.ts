@@ -16,6 +16,12 @@ export default defineConfig({
         action: {
           default_popup: 'src/extension/popup/index.html',
           default_title: 'Bookmarks Manager',
+          default_icon: {
+            '16': 'icon16.png',
+            '32': 'icon32.png',
+            '48': 'icon48.png',
+            '128': 'icon128.png',
+          },
         },
         options_ui: {
           page: 'src/extension/options/index.html',
@@ -24,6 +30,12 @@ export default defineConfig({
         background: {
           service_worker: 'src/extension/background/service-worker.ts',
           type: 'module',
+        },
+        icons: {
+          '16': 'icon16.png',
+          '32': 'icon32.png',
+          '48': 'icon48.png',
+          '128': 'icon128.png',
         },
       },
     }),

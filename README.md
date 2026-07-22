@@ -1,6 +1,6 @@
 <p align="center">
   <br>
-  <img width="200" src="./public/icon.svg" alt="Bookmarks Manager logo" />
+  <img width="200" src="./public/icon128.png" alt="Bookmarks Manager logo" />
   <br>
   <h1 align="center">Bookmarks Manager</h1>
   <p align="center">
