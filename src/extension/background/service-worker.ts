@@ -1,4 +1,4 @@
-import type { AppConfig, Bookmark, SyncResult } from '../../shared/types'
+import type { AppConfig, Bookmark, BookmarkDiff } from '../../shared/types'
 import { DEFAULT_CONFIG } from '../../shared/types'
 import { SyncEngine } from '../../shared/sync'
 
@@ -16,37 +16,16 @@ function loadConfig(): Promise<AppConfig> {
   })
 }
 
-async function getLocalBookmarks(steps: string[]): Promise<Bookmark[]> {
-  const stored = await new Promise<Bookmark[]>((resolve) => {
-    chrome.storage.local.get('bookmarks', (result) => {
-      resolve((result.bookmarks ?? []) as Bookmark[])
-    })
-  })
-
-  steps.push(`storage: ${stored.length} 条`)
-
-  if (stored.length > 0) return stored
-
-  steps.push('storage 为空，从浏览器导入...')
-  try {
-    const imported = await importFromBrowser()
-    steps.push(`导入: ${imported.length} 条`)
-    return imported
-  } catch (e) {
-    steps.push(`导入失败: ${(e as Error).message}`)
-    return []
-  }
-}
-
-async function importFromBrowser(): Promise<Bookmark[]> {
+/** 从浏览器原生书签读取并展开为扁平列表（始终取当前浏览器最新数据） */
+async function getBrowserBookmarks(steps: string[]): Promise<Bookmark[]> {
   const tree = await chrome.bookmarks.getTree()
-  const imported: Bookmark[] = []
+  const flat: Bookmark[] = []
 
   function walk(nodes: chrome.bookmarks.BookmarkTreeNode[], folderPath: string) {
     for (const node of nodes) {
       if (node.url) {
-        imported.push({
-          id: crypto.randomUUID(),
+        flat.push({
+          id: node.id, // 使用 Chrome 原生 ID（同一浏览器内稳定）
           title: node.title,
           url: node.url,
           folder: folderPath || '/',
@@ -63,160 +42,202 @@ async function importFromBrowser(): Promise<Bookmark[]> {
   }
 
   walk(tree, '')
-  return imported
-}
-
-function showResult(steps: string[], ok: boolean) {
-  // badge 图标
-  chrome.action.setBadgeText({ text: ok ? 'ok' : 'ERR' })
-  chrome.action.setBadgeBackgroundColor({ color: ok ? '#4caf50' : '#f44336' })
-  // tooltip 显示详细步骤
-  chrome.action.setTitle({ title: steps.join(' | ') })
-  // 5s 后清除 badge
-  setTimeout(() => chrome.action.setBadgeText({ text: '' }), 5000)
+  steps.push(`浏览器: ${flat.length} 条书签`)
+  return flat
 }
 
 /**
- * 从浏览器原生书签重新导入，与已存储的书签合并，保存到 storage
- * 以 URL 为匹配键，保留已存储书签的标签/文件夹等扩展数据
+ * 将文件夹路径解析为 Chrome 书签文件夹节点 ID
+ * 路径格式：'/书签栏/子文件夹'，不存在则逐级创建
  */
-async function refreshFromBrowser(): Promise<Bookmark[]> {
-  const { bookmarks: stored = [] } = await chrome.storage.local.get('bookmarks') as { bookmarks?: Bookmark[] }
-
-  const storedByUrl = new Map<string, Bookmark>()
-  for (const b of stored) {
-    storedByUrl.set(b.url, b)
+async function resolveFolderPath(folderPath: string, steps: string[]): Promise<string> {
+  const parts = folderPath.split('/').filter(p => p !== '')
+  if (parts.length === 0) {
+    steps.push('空文件夹路径，默认使用书签栏')
+    return '1'
   }
 
-  const browser = await importFromBrowser()
-  const seenUrls = new Set<string>()
-  const merged: Bookmark[] = []
+  // 从根节点查找一级文件夹
+  const tree = await chrome.bookmarks.getTree()
+  const rootChildren = tree[0]?.children ?? []
+  let current: chrome.bookmarks.BookmarkTreeNode | undefined = rootChildren.find(
+    (n: chrome.bookmarks.BookmarkTreeNode) => !n.url && n.title === parts[0]
+  )
 
-  for (const bb of browser) {
-    // 同一 URL 可能出现在浏览器多个文件夹中，只处理第一个，避免重复
-    if (seenUrls.has(bb.url)) continue
-    seenUrls.add(bb.url)
-    const existing = storedByUrl.get(bb.url)
-    if (existing) {
-      // 保留已有书签（含标签等扩展数据），但同步标题变更
-      if (existing.title !== bb.title) {
-        existing.title = bb.title
-        existing.updatedAt = new Date().toISOString()
-      }
-      merged.push(existing)
-    } else {
-      // 浏览器新增的书签
-      merged.push(bb)
+  if (!current) {
+    steps.push(`创建一级文件夹: ${parts[0]}`)
+    current = await chrome.bookmarks.create({ parentId: '1', title: parts[0] })
+  }
+
+  // 逐级查找或创建子文件夹
+  for (let i = 1; i < parts.length; i++) {
+    const children: chrome.bookmarks.BookmarkTreeNode[] = await chrome.bookmarks.getChildren(current.id)
+    let next: chrome.bookmarks.BookmarkTreeNode | undefined = children.find(
+      (n: chrome.bookmarks.BookmarkTreeNode) => !n.url && n.title === parts[i]
+    )
+    if (!next) {
+      steps.push(`创建子文件夹: ${parts[i]}`)
+      next = await chrome.bookmarks.create({ parentId: current.id, title: parts[i] })
     }
+    current = next
   }
 
-  // 保留扩展手动添加、但浏览器中没有的书签；删除浏览器中书签已删除的记录
-  for (const b of stored) {
-    if (!seenUrls.has(b.url)) {
-      if (b.source === 'extension') {
-        merged.push(b)
-      }
-      // 浏览器来源且浏览器中已删除 → 不保留
-    }
-  }
-
-  merged.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-
-  await chrome.storage.local.set({ bookmarks: merged })
-  return merged
+  return current!.id
 }
 
-async function performSync(): Promise<SyncResult> {
-  const steps: string[] = []
-
-  try {
-    chrome.action.setBadgeText({ text: '...' })
-    chrome.action.setBadgeBackgroundColor({ color: '#f5a623' })
-
-    if (!config.githubToken || !config.repoOwner || !config.repoName) {
-      steps.push('配置不完整')
-      showResult(steps, false)
-      return { success: false, timestamp: new Date().toISOString(), error: '请先完成设置', steps }
+/** 将差异应用到浏览器原生书签 */
+async function applyDiffsToBrowser(diffs: BookmarkDiff[], steps: string[]): Promise<void> {
+  for (const diff of diffs) {
+    switch (diff.type) {
+      case 'added': {
+        const parentId = await resolveFolderPath(diff.remote.folder || '/', steps)
+        const node = await chrome.bookmarks.create({
+          parentId,
+          title: diff.remote.title,
+          url: diff.remote.url,
+        })
+        steps.push(`+ browser: ${node.title}`)
+        break
+      }
+      case 'deleted': {
+        const searchUrl = diff.local?.url ?? diff.remote.url
+        const found = await chrome.bookmarks.search({ url: searchUrl })
+        for (const node of found) {
+          await chrome.bookmarks.remove(node.id)
+        }
+        steps.push(`- browser: ${diff.remote.title}`)
+        break
+      }
+      case 'modified': {
+        const searchUrl = diff.local?.url ?? diff.remote.url
+        const found = await chrome.bookmarks.search({ url: searchUrl })
+        if (found.length > 0) {
+          const node = found[0]
+          await chrome.bookmarks.update(node.id, {
+            title: diff.remote.title,
+            url: diff.remote.url,
+          })
+          // 文件夹路径变更时，移动到新文件夹
+          const hasFolderChange = diff.changes?.some(c => c.field === 'folder')
+          if (hasFolderChange) {
+            const newParentId = await resolveFolderPath(diff.remote.folder || '/', steps)
+            await chrome.bookmarks.move(node.id, { parentId: newParentId })
+            steps.push(`→ browser: ${diff.remote.title} → ${diff.remote.folder}`)
+          }
+          steps.push(`~ browser: ${diff.remote.title}`)
+        }
+        break
+      }
     }
-
-    if (!syncEngine) syncEngine = new SyncEngine(config)
-
-    const local = await getLocalBookmarks(steps)
-
-    const { bookmarks, result } = await syncEngine.sync(local, steps)
-
-    if (result.success) {
-      steps.push(`完成: ${bookmarks.length} 条`)
-      showResult(steps, true)
-      await new Promise<void>((resolve) => {
-        chrome.storage.local.set({
-          bookmarks,
-          lastSync: result.timestamp,
-          syncLog: { ...result, steps },
-        }, resolve)
-      })
-    } else {
-      steps.push(`失败: ${result.error}`)
-      showResult(steps, false)
-      chrome.storage.local.set({ syncLog: { ...result, steps } })
-    }
-
-    return { ...result, steps }
-  } catch (e) {
-    steps.push(`异常: ${(e as Error).message}`)
-    showResult(steps, false)
-    const r = { success: false, timestamp: new Date().toISOString(), error: (e as Error).message, steps }
-    chrome.storage.local.set({ syncLog: r })
-    return r
   }
 }
 
-function registerAlarm(cfg: AppConfig) {
-  const minutes = (cfg.syncIntervalHours || 6) * 60
-  chrome.alarms.create('syncAlarm', { periodInMinutes: minutes })
+function showResult(steps: string[], ok: boolean) {
+  chrome.action.setBadgeText({ text: ok ? 'ok' : 'ERR' })
+  chrome.action.setBadgeBackgroundColor({ color: ok ? '#4caf50' : '#f44336' })
+  chrome.action.setTitle({ title: steps.join(' | ') })
+  setTimeout(() => chrome.action.setBadgeText({ text: '' }), 5000)
 }
 
 // ---- 初始化 ----
+loadConfig()
+
 chrome.runtime.onInstalled.addListener(async () => {
-  const cfg = await loadConfig() as AppConfig
-  registerAlarm(cfg)
-  if (cfg.autoSyncOnLoad) {
-    performSync()
-  }
-})
-
-chrome.runtime.onStartup.addListener(async () => {
   await loadConfig()
-  if (config.autoSyncOnLoad) {
-    performSync()
-  }
 })
 
+// ---- 消息处理 ----
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   switch (msg.type) {
-    case 'SYNC_MANUAL':
-      performSync().then(sendResponse)
-      return true
+    case 'PUSH_TO_GITHUB': {
+      ;(async () => {
+        const steps: string[] = []
+        try {
+          if (!config.githubToken || !config.repoOwner || !config.repoName) {
+            steps.push('配置不完整')
+            showResult(steps, false)
+            sendResponse({ success: false, error: '请先完成设置', steps })
+            return
+          }
+          if (!syncEngine) syncEngine = new SyncEngine(config)
 
-    case 'REFRESH_BOOKMARKS':
-      refreshFromBrowser().then(sendResponse)
+          const local = await getBrowserBookmarks(steps)
+          await syncEngine.pushOnly(local, steps)
+          steps.push(`完成: ${local.length} 条`)
+          showResult(steps, true)
+          const timestamp = new Date().toISOString()
+          chrome.storage.local.set({ lastSync: timestamp, syncLog: { success: true, timestamp, steps } })
+          sendResponse({ success: true, timestamp, steps })
+        } catch (e) {
+          steps.push(`❌ ${(e as Error).message}`)
+          showResult(steps, false)
+          const timestamp = new Date().toISOString()
+          chrome.storage.local.set({ syncLog: { success: false, timestamp, error: (e as Error).message, steps } })
+          sendResponse({ success: false, error: (e as Error).message, steps })
+        }
+      })()
       return true
+    }
+
+    case 'PULL_FROM_GITHUB': {
+      ;(async () => {
+        const steps: string[] = []
+        try {
+          if (!config.githubToken || !config.repoOwner || !config.repoName) {
+            steps.push('配置不完整')
+            showResult(steps, false)
+            sendResponse({ success: false, timestamp: '', diffs: [], error: '请先完成设置', steps })
+            return
+          }
+          if (!syncEngine) syncEngine = new SyncEngine(config)
+
+          const remote = await syncEngine.pullOnly(steps)
+          const local = await getBrowserBookmarks(steps)
+          const diffs = SyncEngine.computeDiff(remote, local)
+          steps.push(`差异: 新增${diffs.filter(d => d.type === 'added').length} / 删除${diffs.filter(d => d.type === 'deleted').length} / 修改${diffs.filter(d => d.type === 'modified').length}`)
+          showResult(steps, true)
+          sendResponse({ success: true, timestamp: new Date().toISOString(), diffs, steps })
+        } catch (e) {
+          steps.push(`❌ ${(e as Error).message}`)
+          showResult(steps, false)
+          sendResponse({ success: false, timestamp: '', diffs: [], error: (e as Error).message, steps })
+        }
+      })()
+      return true
+    }
+
+    case 'APPLY_PULL_DIFFS': {
+      ;(async () => {
+        const steps: string[] = []
+        try {
+          const selectedDiffs = msg.selectedDiffs as BookmarkDiff[]
+          await applyDiffsToBrowser(selectedDiffs, steps)
+          steps.push(`完成: 应用 ${selectedDiffs.length} 项`)
+          showResult(steps, true)
+          const timestamp = new Date().toISOString()
+          chrome.storage.local.set({ lastSync: timestamp, syncLog: { success: true, timestamp, steps } })
+          sendResponse({ success: true, timestamp, steps })
+        } catch (e) {
+          steps.push(`❌ ${(e as Error).message}`)
+          showResult(steps, false)
+          sendResponse({ success: false, error: (e as Error).message, steps })
+        }
+      })()
+      return true
+    }
 
     case 'GET_CONFIG':
-      sendResponse({ config })
-      break
+      chrome.storage.local.get('config', (result) => {
+        sendResponse({ config: { ...DEFAULT_CONFIG, ...(result.config ?? {}) } })
+      })
+      return true
 
     case 'SAVE_CONFIG':
       config = msg.config as AppConfig
       syncEngine = new SyncEngine(config)
       chrome.storage.local.set({ config }, () => {
-        chrome.alarms.clearAll(() => registerAlarm(config))
         sendResponse({ success: true })
       })
       return true
   }
-})
-
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === 'syncAlarm') performSync()
 })

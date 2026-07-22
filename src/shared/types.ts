@@ -27,6 +27,28 @@ export interface SyncResult {
   steps?: string[]
 }
 
+/** 单条书签差异 */
+export interface BookmarkDiff {
+  type: 'added' | 'deleted' | 'modified'
+  remote: Bookmark
+  /** deleted/modified 时有值，added 时无 */
+  local?: Bookmark
+  /** modified 时展示具体变化字段 */
+  changes?: Array<{
+    field: 'title' | 'url' | 'folder' | 'tags'
+    from: string
+    to: string
+  }>
+}
+
+/** 拉取差异结果 */
+export interface PullDiffResult {
+  success: boolean
+  timestamp: string
+  diffs: BookmarkDiff[]
+  error?: string
+}
+
 export const DEFAULT_CONFIG: AppConfig = {
   githubToken: '',
   repoOwner: 'LeonidasLux',

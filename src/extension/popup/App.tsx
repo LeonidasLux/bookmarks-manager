@@ -1,9 +1,41 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { Bookmark, AppConfig, SyncResult } from '../../shared/types'
+import type { Bookmark, AppConfig, SyncResult, BookmarkDiff, PullDiffResult } from '../../shared/types'
 
 function openOptions() {
   chrome.runtime.openOptionsPage()
 }
+
+/** 从浏览器书签树展开为扁平列表 */
+async function loadBrowserBookmarks(): Promise<Bookmark[]> {
+  const tree = await chrome.bookmarks.getTree()
+  const flat: Bookmark[] = []
+
+  function walk(nodes: chrome.bookmarks.BookmarkTreeNode[], folderPath: string) {
+    for (const node of nodes) {
+      if (node.url) {
+        flat.push({
+          id: node.id,
+          title: node.title,
+          url: node.url,
+          folder: folderPath || '/',
+          tags: [],
+          createdAt: new Date(node.dateAdded ?? Date.now()).toISOString(),
+          updatedAt: new Date(node.dateAdded ?? Date.now()).toISOString(),
+          source: 'browser',
+        })
+      }
+      if (node.children) {
+        walk(node.children, `${folderPath}/${node.title}`)
+      }
+    }
+  }
+
+  walk(tree, '')
+  return flat
+}
+
+const DIFF_LABEL: Record<string, string> = { added: '新增', deleted: '删除', modified: '修改' }
+const DIFF_COLOR: Record<string, string> = { added: '#388e3c', deleted: '#d32f2f', modified: '#f57c00' }
 
 function App() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
@@ -12,20 +44,32 @@ function App() {
   const [filtered, setFiltered] = useState<Bookmark[]>([])
   const [loading, setLoading] = useState(true)
   const [syncStatus, setSyncStatus] = useState<string | null>(null)
+  const [pushLoading, setPushLoading] = useState(false)
 
-  // 启动时：加载配置 + 书签 + 同步日志，并从浏览器刷新书签
+  const [pullDiffs, setPullDiffs] = useState<BookmarkDiff[] | null>(null)
+  const [pullLoading, setPullLoading] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  /** 刷新生浏览器书签到 state */
+  const refresh = useCallback(async () => {
+    const items = await loadBrowserBookmarks()
+    setBookmarks(items)
+    setFiltered(items)
+    setLoading(false)
+  }, [])
+
   const init = useCallback(() => {
+    // 配置
     chrome.runtime.sendMessage({ type: 'GET_CONFIG' }, (response) => {
       if (response?.config) setConfig(response.config)
       else setConfig(null)
     })
 
-    chrome.storage.local.get(['bookmarks', 'lastSync', 'syncLog'], (result) => {
-      const items = (result.bookmarks ?? []) as Bookmark[]
-      setBookmarks(items)
-      setFiltered(items)
-      setLoading(false)
+    // 直接从浏览器读取书签
+    refresh()
 
+    // 上次同步状态
+    chrome.storage.local.get(['lastSync', 'syncLog'], (result) => {
       const log = result.syncLog as SyncResult | undefined
       if (log) {
         if (log.success && log.timestamp) {
@@ -37,36 +81,10 @@ function App() {
         setSyncStatus(`上次同步: ${new Date(result.lastSync as string).toLocaleString('zh-CN')}`)
       }
     })
-
-    // 从浏览器原生书签刷新，拾取用户在浏览器中书签管理器做的增删改
-    chrome.runtime.sendMessage({ type: 'REFRESH_BOOKMARKS' })
-  }, [])
+  }, [refresh])
 
   useEffect(() => { init() }, [init])
 
-  // 监听 storage 变化
-  useEffect(() => {
-    const listener = (changes: Record<string, chrome.storage.StorageChange>) => {
-      if (changes.bookmarks) {
-        setBookmarks(changes.bookmarks.newValue as Bookmark[])
-        setFiltered(changes.bookmarks.newValue as Bookmark[])
-      }
-      if (changes.syncLog) {
-        const log = changes.syncLog.newValue as SyncResult | undefined
-        if (log) {
-          if (log.success && log.timestamp) {
-            setSyncStatus(`✅ 同步成功 — ${new Date(log.timestamp).toLocaleString('zh-CN')}`)
-          } else if (log.error) {
-            setSyncStatus(`❌ ${log.error}`)
-          }
-        }
-      }
-    }
-    chrome.storage.onChanged.addListener(listener)
-    return () => chrome.storage.onChanged.removeListener(listener)
-  }, [])
-
-  // 搜索过滤
   useEffect(() => {
     if (!search) { setFiltered(bookmarks); return }
     const q = search.toLowerCase()
@@ -77,35 +95,177 @@ function App() {
     ))
   }, [search, bookmarks])
 
-  // 点击同步
-  const handleSync = () => {
-    setSyncStatus('🔄 同步中...')
-    chrome.runtime.sendMessage({ type: 'SYNC_MANUAL' })
-  }
-
-  const handleSaveCurrent = () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const tab = tabs[0]
-      if (!tab?.url || !tab?.title) return
-
-      const newBookmark: Bookmark = {
-        id: crypto.randomUUID(),
-        title: tab.title,
-        url: tab.url,
-        folder: '/',
-        tags: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        source: 'extension',
+  const handlePush = () => {
+    setPushLoading(true)
+    setSyncStatus('🔄 推送到 GitHub...')
+    chrome.runtime.sendMessage({ type: 'PUSH_TO_GITHUB' }, (res: SyncResult) => {
+      setPushLoading(false)
+      if (res.success) {
+        setSyncStatus(`✅ 推送成功 — ${new Date(res.timestamp).toLocaleString('zh-CN')}`)
+      } else {
+        setSyncStatus(`❌ 推送失败: ${res.error}`)
       }
-
-      const updated = [newBookmark, ...bookmarks]
-      setBookmarks(updated)
-      setFiltered(updated)
-      chrome.storage.local.set({ bookmarks: updated })
     })
   }
 
+  const handlePull = () => {
+    setPullLoading(true)
+    setSyncStatus('🔄 从 GitHub 拉取...')
+    chrome.runtime.sendMessage({ type: 'PULL_FROM_GITHUB' }, (res: PullDiffResult) => {
+      setPullLoading(false)
+      if (res.success) {
+        if (res.diffs.length === 0) {
+          setSyncStatus('✅ 远程无变更，本地已是最新')
+        } else {
+          setPullDiffs(res.diffs)
+          setSelectedIds(res.diffs.map(d => d.remote.id))
+          setSyncStatus(null)
+        }
+      } else {
+        setSyncStatus(`❌ 拉取失败: ${res.error}`)
+      }
+    })
+  }
+
+  const cancelPullReview = () => {
+    setPullDiffs(null)
+    setSelectedIds([])
+  }
+
+  const applySelected = async () => {
+    const selectedDiffs = pullDiffs!.filter(d => selectedIds.includes(d.remote.id))
+    chrome.runtime.sendMessage({ type: 'APPLY_PULL_DIFFS', selectedDiffs }, async (res: SyncResult) => {
+      if (res.success) {
+        setSyncStatus(`✅ 已应用 ${selectedDiffs.length} 项变更 — ${new Date(res.timestamp).toLocaleString('zh-CN')}`)
+        await refresh() // 应用后重新读取浏览器书签
+      } else {
+        setSyncStatus(`❌ 应用失败: ${res.error}`)
+      }
+      setPullDiffs(null)
+      setSelectedIds([])
+    })
+  }
+
+  const toggleId = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
+  }
+
+  const selectAllInGroup = (diffs: BookmarkDiff[]) => {
+    const groupIds = diffs.map(d => d.remote.id)
+    setSelectedIds(prev => {
+      const merged = new Set(prev)
+      groupIds.forEach(id => merged.add(id))
+      return Array.from(merged)
+    })
+  }
+
+  const invertSelectionInGroup = (diffs: BookmarkDiff[]) => {
+    const groupIds = new Set(diffs.map(d => d.remote.id))
+    setSelectedIds(prev => {
+      const toRemove = new Set<string>()
+      const toAdd: string[] = []
+      const prevSet = new Set(prev)
+      for (const id of groupIds) {
+        if (prevSet.has(id)) {
+          toRemove.add(id)
+        } else {
+          toAdd.push(id)
+        }
+      }
+      return [...prev.filter(id => !toRemove.has(id)), ...toAdd]
+    })
+  }
+
+  const handleSaveCurrent = () => {
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      const tab = tabs[0]
+      if (!tab?.url || !tab?.title) return
+
+      await chrome.bookmarks.create({
+        parentId: '2', // "其他书签"
+        title: tab.title,
+        url: tab.url,
+      })
+
+      await refresh() // 新建后刷新列表
+    })
+  }
+
+  // ---- 渲染差异审核 UI ----
+  if (pullDiffs) {
+    const groups = { added: pullDiffs.filter(d => d.type === 'added'), deleted: pullDiffs.filter(d => d.type === 'deleted'), modified: pullDiffs.filter(d => d.type === 'modified') }
+    const selectedCount = selectedIds.length
+    const totalCount = pullDiffs.length
+
+    return (
+      <div style={{ width: 380, padding: '0.5rem', fontFamily: 'system-ui, sans-serif' }}>
+        <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.375rem', color: '#333' }}>
+          📥 从 GitHub 拉取结果
+        </div>
+
+        <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.375rem' }}>
+          共 {totalCount} 项变更，已选 {selectedCount} 项
+        </div>
+
+        <div style={{ maxHeight: 360, overflowY: 'auto', marginBottom: '0.375rem' }}>
+          {(['added', 'deleted', 'modified'] as const).map(type => {
+            const items = groups[type]
+            if (items.length === 0) return null
+            return (
+              <div key={type} style={{ marginBottom: '0.375rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: DIFF_COLOR[type] }}>
+                    {DIFF_LABEL[type]} ({items.length})
+                  </span>
+                  <span style={{ fontSize: '0.7rem', display: 'flex', gap: 6 }}>
+                    <a onClick={() => selectAllInGroup(items)} style={{ cursor: 'pointer', color: '#1a73e8', textDecoration: 'none' }}>
+                      全选
+                    </a>
+                    <a onClick={() => invertSelectionInGroup(items)} style={{ cursor: 'pointer', color: '#1a73e8', textDecoration: 'none' }}>
+                      反选
+                    </a>
+                  </span>
+                </div>
+                {items.map(d => (
+                  <div key={d.remote.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 4, padding: '0.25rem 0', borderBottom: '1px solid #f0f0f0' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(d.remote.id)}
+                      onChange={() => toggleId(d.remote.id)}
+                      style={{ marginTop: 2, flexShrink: 0 }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 500, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {d.remote.folder && d.remote.folder !== '/' ? `📁 ${d.remote.folder}/` : ''}{d.remote.title}
+                      </div>
+                      {d.type === 'modified' && d.changes && (
+                        <div style={{ fontSize: '0.7rem', color: '#888', marginTop: 2 }}>
+                          {d.changes.map(c => (
+                            <div key={c.field}>{c.field}: &quot;{c.from}&quot; → &quot;{c.to}&quot;</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          })}
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.375rem', justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '0.375rem' }}>
+          <button onClick={cancelPullReview} style={{ padding: '0.375rem 0.75rem', border: '1px solid #ccc', borderRadius: 4, background: '#fff', cursor: 'pointer', fontSize: '0.8rem' }}>
+            ✕ 取消
+          </button>
+          <button onClick={applySelected} disabled={selectedCount === 0} style={{ padding: '0.375rem 0.75rem', border: 'none', borderRadius: 4, background: selectedCount === 0 ? '#ccc' : '#1a73e8', color: '#fff', cursor: selectedCount === 0 ? 'not-allowed' : 'pointer', fontSize: '0.8rem' }}>
+            ✓ 应用选中 ({selectedCount})
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ---- 主界面 ----
   if (loading) {
     return <div style={{ padding: '1rem', fontFamily: 'system-ui, sans-serif', color: '#888' }}>加载中...</div>
   }
@@ -113,7 +273,7 @@ function App() {
   const isConfigured = config?.githubToken && config?.repoOwner && config?.repoName
 
   return (
-    <div style={{ width: 360, padding: '0.5rem', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ width: 380, padding: '0.5rem', fontFamily: 'system-ui, sans-serif' }}>
       {!isConfigured ? (
         <div style={{ textAlign: 'center', padding: '2rem 0.5rem' }}>
           <p style={{ color: '#555', marginBottom: '0.5rem' }}>
@@ -155,7 +315,12 @@ function App() {
               {bookmarks.length}
             </span>
             <button onClick={handleSaveCurrent} title="保存当前页面">＋</button>
-            <button onClick={handleSync} title="同步">↻</button>
+            <button onClick={handlePush} disabled={pushLoading} title="同步到 GitHub（强制覆盖远程）" style={{ fontSize: pushLoading ? '0.7rem' : undefined }}>
+              {pushLoading ? '⋯' : '↑'}
+            </button>
+            <button onClick={handlePull} disabled={pullLoading} title="从 GitHub 拉取（对比差异后手动合并）" style={{ fontSize: pullLoading ? '0.7rem' : undefined }}>
+              {pullLoading ? '⋯' : '↓'}
+            </button>
             <button onClick={openOptions} title="设置">⚙</button>
           </div>
 
@@ -180,7 +345,6 @@ function App() {
                   >
                     {b.title}
                   </a>
-                  {/* 书签所在文件夹路径 */}
                   {b.folder && b.folder !== '/' && (
                     <span style={{
                       fontSize: '0.7rem', color: '#999',
@@ -211,7 +375,6 @@ function App() {
               {syncStatus}
             </div>
           )}
-
         </>
       )}
     </div>
