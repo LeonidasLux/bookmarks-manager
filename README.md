@@ -158,20 +158,46 @@
 bookmarks-manager/
 ├── src/
 │   ├── extension/
-│   │   ├── popup/                  # 弹窗 UI（React）
-│   │   │   ├── App.tsx             # 主组件：书签浏览 + 同步 + 差异审核
+│   │   ├── popup/                     # 弹窗 UI（React）
+│   │   │   ├── App.tsx                # 根组件：编排 hooks 和子组件（~110 行）
+│   │   │   ├── constants.ts           # 常量：文件夹 ID、差异标签/颜色
+│   │   │   ├── styles.ts              # 37 个内联样式对象
 │   │   │   ├── index.html
-│   │   │   └── main.tsx            # 入口
-│   │   ├── options/                # 设置页面（React）
-│   │   │   ├── App.tsx             # 配置表单
+│   │   │   ├── main.tsx               # ReactDOM 入口
+│   │   │   ├── hooks/                 # 状态逻辑层
+│   │   │   │   ├── useConfig.ts       #   配置加载 + 同步状态
+│   │   │   │   ├── useBookmarkNavigation.ts  #   文件夹导航 + 面包屑
+│   │   │   │   ├── useSync.ts         #   推送/拉取同步操作
+│   │   │   │   └── useDiffReview.ts   #   差异审核状态管理
+│   │   │   └── components/            # 展示组件层
+│   │   │       ├── Toolbar.tsx         #   顶部工具栏
+│   │   │       ├── BreadcrumbNav.tsx   #   面包屑导航
+│   │   │       ├── BookmarkList.tsx    #   书签列表 + 文件夹标签
+│   │   │       ├── DiffReviewPanel.tsx #   差异审核面板
+│   │   │       ├── LoadingView.tsx     #   加载状态
+│   │   │       └── UnconfiguredView.tsx #  未配置提示
+│   │   ├── options/                   # 设置页面（React）
+│   │   │   ├── App.tsx                # 配置表单（~111 行）
 │   │   │   ├── index.html
-│   │   │   └── main.tsx
-│   │   └── background/             # Service Worker
-│   │       └── service-worker.ts   # 消息路由 + 书签操作 + GitHub 同步
-│   └── shared/                     # 共享层
-│       ├── types.ts                # 类型定义（Bookmark, AppConfig, SyncResult 等）
-│       └── sync.ts                 # 同步引擎（GitHub REST API 客户端）
-├── vite.config.ts                  # Vite + CRX 打包配置
+│   │   │   ├── main.tsx
+│   │   │   └── hooks/
+│   │   │       └── useConfigForm.ts   #   表单状态管理
+│   │   └── background/                # Service Worker
+│   │       ├── service-worker.ts      #   消息路由 + 初始化（~120 行）
+│   │       ├── bookmark-utils.ts      #   书签树遍历 / 文件夹路径解析
+│   │       ├── folder-utils.ts        #   空文件夹检测与递归清理
+│   │       └── diff-applier.ts        #   将差异应用到浏览器原生书签
+│   ├── shared/                        # 共享层
+│   │   ├── types.ts                   #   类型定义（Bookmark, AppConfig 等）
+│   │   └── sync.ts                    #   SyncEngine（GitHub REST API 客户端）
+│   └── __tests__/                     # 测试（10 文件 / 49 用例）
+│       ├── shared/                    #   sync (10) + types (1)
+│       ├── popup/hooks/               #   useDiffReview (6)
+│       ├── popup/components/          #   Toolbar + BreadcrumbNav + DiffReviewPanel + StatusViews (19)
+│       ├── options/hooks/             #   useConfigForm (5)
+│       └── background/                #   bookmark-utils + folder-utils (8)
+├── vite.config.ts                     # Vite + CRX 打包配置
+├── vitest.config.ts                   # Vitest 测试配置
 ├── tsconfig.json
 ├── package.json
 └── pnpm-workspace.yaml
@@ -184,6 +210,8 @@ bookmarks-manager/
 | **Popup** | 用户界面 | 书签浏览、文件夹导航、一键保存、同步触发、差异审核 |
 | **Options** | 配置管理 | GitHub 连接配置、同步策略参数 |
 | **Service Worker** | 后台引擎 | 消息路由、浏览器书签读写、GitHub API 调用、差异计算与应用 |
+| **Hooks** | 状态逻辑 | 独立 hooks 管理导航/同步/审核/配置，与 UI 组件解耦 |
+| **Tools** | 公共服务 | 书签树遍历、文件夹路径解析、空文件夹检测与递归清理 |
 | **Sync Engine** | 同步核心 | GitHub REST API（base64 编解码、文件 SHA 管理）、差异计算算法 |
 
 ### 数据流
@@ -226,6 +254,19 @@ pnpm build
 
 编译 TypeScript 并输出到 `dist/` 目录，产物为可直接加载的扩展包。
 
+### 测试
+
+```bash
+pnpm test        # 单次运行全部测试
+pnpm test:watch  # watch 模式
+```
+
+基于 [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/)，覆盖：
+- 共享层：`SyncEngine.computeDiff` 差异算法、`normalizeFolderPath` 路径规范化
+- Hooks：差异审核状态流转、配置表单读写
+- 组件：工具栏按钮交互、面包屑导航、差异审核面板渲染
+- 后台工具：书签树遍历展平、空文件夹检测与递归清理
+
 ### 预览构建产物
 
 ```bash
@@ -241,7 +282,8 @@ pnpm preview
 
 - 独立功能拆分单独的 hooks 文件实现
 - 合理拆分组件，避免全部 UI 写在一个文件里
-- 使用 `pnpm build` 确保代码可正常编译
+- 每个功能都需要有对应的测试用例覆盖
+- 使用 `pnpm build && pnpm test` 确保编译和测试通过
 
 ---
 
