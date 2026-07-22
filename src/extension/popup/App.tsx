@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { AppConfig, SyncResult, BookmarkDiff, PullDiffResult } from '../../shared/types'
 
 // ---- Constants ----
@@ -20,8 +20,13 @@ function openOptions() {
 }
 
 async function getFolderChildren(folderId: string): Promise<chrome.bookmarks.BookmarkTreeNode[]> {
-  const [node] = await chrome.bookmarks.getSubTree(folderId)
-  return node.children ?? []
+  try {
+    const [node] = await chrome.bookmarks.getSubTree(folderId)
+    return node.children ?? []
+  } catch {
+    // 文件夹不存在（如空移动设备书签未创建过根节点），返回空列表
+    return []
+  }
 }
 
 function isFolderNode(node: chrome.bookmarks.BookmarkTreeNode): boolean {
@@ -435,20 +440,33 @@ function App() {
   const [emptyFolders, setEmptyFolders] = useState<string[]>([])
   const [diffTab, setDiffTab] = useState<'added' | 'deleted' | 'modified' | 'empty'>('added')
 
-  const isHomeView = breadcrumbs.length === 0 && currentFolder.id === BOOKMARKS_BAR_ID
+  const isRootView = breadcrumbs.length === 0
+  const isHomeView = currentFolder.id === BOOKMARKS_BAR_ID && isRootView
+
+  /** 跟踪当前文件夹 ref，供 enterFolder/goBack 等闭包使用避免 stale closure */
+  const currentFolderRef = useRef(currentFolder)
+  currentFolderRef.current = currentFolder
+
+  /** 加载序列号，用于丢弃 stale 的 loadFolder 结果 */
+  const loadSeqRef = useRef(0)
 
   const loadFolder = useCallback(async (id: string) => {
+    const seq = ++loadSeqRef.current
     const children = await getFolderChildren(id)
-    setCurrentItems(children)
+    if (seq === loadSeqRef.current) {
+      setCurrentItems(children)
+    }
   }, [])
 
-  const init = useCallback(() => {
+  const init = useCallback(async () => {
     chrome.runtime.sendMessage({ type: 'GET_CONFIG' }, (response) => {
       if (response?.config) setConfig(response.config)
       else setConfig(null)
     })
 
-    loadFolder(BOOKMARKS_BAR_ID)
+    // 同步加载书签栏，避免与后续导航产生竞态
+    const children = await getFolderChildren(BOOKMARKS_BAR_ID)
+    setCurrentItems(children)
 
     chrome.storage.local.get(['lastSync', 'syncLog'], (result) => {
       const log = result.syncLog as SyncResult | undefined
@@ -464,31 +482,49 @@ function App() {
     })
 
     setLoading(false)
-  }, [loadFolder])
+  }, [])
 
   useEffect(() => { init() }, [init])
 
   // ---- 导航操作 ----
   const enterFolder = useCallback(async (id: string, title: string) => {
-    setBreadcrumbs(prev => [...prev, currentFolder])
+    // 先加载数据，再更新状态 — 消除竞态
+    const children = await getFolderChildren(id)
+
+    const prev = currentFolderRef.current
+    const isSiblingRoot = (id === OTHER_BOOKMARKS_ID || id === MOBILE_BOOKMARKS_ID)
+      && prev.id === BOOKMARKS_BAR_ID
+    if (!isSiblingRoot) {
+      setBreadcrumbs(b => [...b, prev])
+    }
     setCurrentFolder({ id, title })
-    await loadFolder(id)
-  }, [currentFolder, loadFolder])
+    setCurrentItems(children)
+  }, [])
 
   const goBack = useCallback(async () => {
-    if (breadcrumbs.length === 0) return
+    if (breadcrumbs.length === 0) {
+      // 从根级文件夹（其他书签/移动设备书签）返回书签栏首页
+      if (currentFolderRef.current.id !== BOOKMARKS_BAR_ID) {
+        const children = await getFolderChildren(BOOKMARKS_BAR_ID)
+        setCurrentFolder({ id: BOOKMARKS_BAR_ID, title: '书签栏' })
+        setCurrentItems(children)
+      }
+      return
+    }
     const prev = breadcrumbs[breadcrumbs.length - 1]
-    setBreadcrumbs(prev2 => prev2.slice(0, -1))
+    const children = await getFolderChildren(prev.id)
+    setBreadcrumbs(b => b.slice(0, -1))
     setCurrentFolder(prev)
-    await loadFolder(prev.id)
+    setCurrentItems(children)
   }, [breadcrumbs, loadFolder])
 
   const navigateToBreadcrumb = useCallback(async (index: number) => {
     const target = breadcrumbs[index]
-    setBreadcrumbs(prev => prev.slice(0, index))
+    const children = await getFolderChildren(target.id)
+    setBreadcrumbs(b => b.slice(0, index))
     setCurrentFolder(target)
-    await loadFolder(target.id)
-  }, [breadcrumbs, loadFolder])
+    setCurrentItems(children)
+  }, [breadcrumbs])
 
   const openBookmark = useCallback((url: string) => {
     chrome.tabs.create({ url })
