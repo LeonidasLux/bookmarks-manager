@@ -15,6 +15,8 @@ export interface AppConfig {
   repoOwner: string
   repoName: string
   syncIntervalHours: number
+  /** 扩展加载时是否自动同步书签到 GitHub */
+  autoSyncOnLoad: boolean
 }
 
 export interface SyncResult {
@@ -27,7 +29,8 @@ export interface SyncResult {
 
 export const DEFAULT_CONFIG: AppConfig = {
   githubToken: '',
-  repoOwner: '',
-  repoName: '',
+  repoOwner: 'LeonidasLux',
+  repoName: 'bookmarks-manager',
   syncIntervalHours: 6,
+  autoSyncOnLoad: false,
 }

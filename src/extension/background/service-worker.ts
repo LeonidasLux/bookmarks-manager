@@ -93,6 +93,8 @@ async function refreshFromBrowser(): Promise<Bookmark[]> {
   const merged: Bookmark[] = []
 
   for (const bb of browser) {
+    // 同一 URL 可能出现在浏览器多个文件夹中，只处理第一个，避免重复
+    if (seenUrls.has(bb.url)) continue
     seenUrls.add(bb.url)
     const existing = storedByUrl.get(bb.url)
     if (existing) {
@@ -178,12 +180,16 @@ function registerAlarm(cfg: AppConfig) {
 chrome.runtime.onInstalled.addListener(async () => {
   const cfg = await loadConfig() as AppConfig
   registerAlarm(cfg)
-  performSync()
+  if (cfg.autoSyncOnLoad) {
+    performSync()
+  }
 })
 
 chrome.runtime.onStartup.addListener(async () => {
   await loadConfig()
-  performSync()
+  if (config.autoSyncOnLoad) {
+    performSync()
+  }
 })
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {

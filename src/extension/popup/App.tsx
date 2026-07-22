@@ -180,6 +180,16 @@ function App() {
                   >
                     {b.title}
                   </a>
+                  {/* 书签所在文件夹路径 */}
+                  {b.folder && b.folder !== '/' && (
+                    <span style={{
+                      fontSize: '0.7rem', color: '#999',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
+                      marginTop: '1px',
+                    }}>
+                      📁 {b.folder}
+                    </span>
+                  )}
                   <span style={{
                     fontSize: '0.75rem', color: '#888',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
