@@ -6,6 +6,8 @@ export interface Bookmark {
   tags: string[]
   createdAt: string
   updatedAt: string
+  /** 书签来源：浏览器原生 or 扩展手动添加 */
+  source?: 'browser' | 'extension'
 }
 
 export interface AppConfig {

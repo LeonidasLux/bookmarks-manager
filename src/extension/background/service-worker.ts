@@ -53,6 +53,7 @@ async function importFromBrowser(): Promise<Bookmark[]> {
           tags: [],
           createdAt: new Date(node.dateAdded ?? Date.now()).toISOString(),
           updatedAt: new Date(node.dateAdded ?? Date.now()).toISOString(),
+          source: 'browser',
         })
       }
       if (node.children) {
@@ -107,10 +108,13 @@ async function refreshFromBrowser(): Promise<Bookmark[]> {
     }
   }
 
-  // 保留 storage 中存在但浏览器中没有的书签（通过扩展添加的）
+  // 保留扩展手动添加、但浏览器中没有的书签；删除浏览器中书签已删除的记录
   for (const b of stored) {
     if (!seenUrls.has(b.url)) {
-      merged.push(b)
+      if (b.source === 'extension') {
+        merged.push(b)
+      }
+      // 浏览器来源且浏览器中已删除 → 不保留
     }
   }
 

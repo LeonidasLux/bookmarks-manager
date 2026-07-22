@@ -96,6 +96,7 @@ function App() {
         tags: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        source: 'extension',
       }
 
       const updated = [newBookmark, ...bookmarks]
