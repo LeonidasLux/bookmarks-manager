@@ -66,7 +66,7 @@ function App() {
           value={config.repoName}
           onChange={(e) => setConfig({ ...config, repoName: e.target.value })}
           style={{ width: '100%', padding: '0.375rem 0.5rem' }}
-          placeholder="bookmarks-manager"
+          placeholder="my-bookmarks"
         />
       </div>
 

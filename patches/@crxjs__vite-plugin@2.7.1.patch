@@ -1,0 +1,13 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+index c998e41214e4a14c9554f7ef0712abb409251e5d..af94c302bdd67db8de5465790a92908e1269f16a 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -324,7 +324,7 @@ const pluginBackground = () => {
+         if (id === workerClientId) {
+           const base = `${config.server.https ? "https" : "http"}://localhost:${config.server.port}/`;
+           return defineClientValues(
+-            workerHmrClient.replace("__BASE__", JSON.stringify(base)).replace("__LIVE_RELOAD__", JSON.stringify(liveReload)).replace(
++            workerHmrClient.replace("__BASE__", JSON.stringify(base)).replace(/__LIVE_RELOAD__/g, JSON.stringify(liveReload)).replace(
+               "__CRX_HMR_TOKEN__",
+               JSON.stringify(
+                 getCrxHmrToken(config)

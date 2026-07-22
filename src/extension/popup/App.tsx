@@ -786,7 +786,7 @@ function App() {
       {/* 工具栏 */}
       <div style={styles.toolbar}>
         <span style={{ flex: 1, fontWeight: 600, fontSize: '13px', color: '#202124', letterSpacing: '0.3px' }}>
-          Bookmarks
+          Bookmarks Manager
         </span>
         <button onClick={handleSaveCurrent} style={styles.iconBtn} title="保存当前页面到其他书签">➕</button>
         <button
