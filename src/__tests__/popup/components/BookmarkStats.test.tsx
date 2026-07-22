@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
+import { renderWithTheme } from '../test-utils'
 import { BookmarkStats } from '../../../extension/popup/components/BookmarkStats'
 import type { BookmarkStatsData } from '../../../extension/popup/hooks/useBookmarkStats'
 
@@ -15,19 +16,19 @@ describe('BookmarkStats', () => {
   }
 
   it('应显示书签和文件夹总数', () => {
-    render(<BookmarkStats stats={mockStats} />)
+    renderWithTheme(<BookmarkStats stats={mockStats} />)
     expect(screen.getByText('书签')).toBeInTheDocument()
-    expect(screen.getByText('文件夹')).toBeInTheDocument()
+    expect(screen.getByText('目录')).toBeInTheDocument()
   })
 
   it('应显示各根级文件夹的书签数', () => {
-    render(<BookmarkStats stats={mockStats} />)
+    renderWithTheme(<BookmarkStats stats={mockStats} />)
     // 30 仅作为书签栏的书签数出现一次
     expect(screen.getByText('30')).toBeInTheDocument()
     // 2 仅作为移动设备书签的书签数出现一次
     expect(screen.getByText('2')).toBeInTheDocument()
     // "其他书签"标签出现
-    expect(screen.getByText('其他书签')).toBeInTheDocument()
+    expect(screen.getByText(/其他书签/)).toBeInTheDocument()
   })
 
   it('书签和总数都为 0 时不渲染', () => {
@@ -41,7 +42,7 @@ describe('BookmarkStats', () => {
       ],
     }
 
-    const { container } = render(<BookmarkStats stats={emptyStats} />)
+    const { container } = renderWithTheme(<BookmarkStats stats={emptyStats} />)
     expect(container.firstChild).toBeNull()
   })
 
@@ -54,8 +55,8 @@ describe('BookmarkStats', () => {
       ],
     }
 
-    const { container } = render(<BookmarkStats stats={folderOnly} />)
+    const { container } = renderWithTheme(<BookmarkStats stats={folderOnly} />)
     expect(container.firstChild).not.toBeNull()
-    expect(screen.getByText('文件夹')).toBeInTheDocument()
+    expect(screen.getByText('目录')).toBeInTheDocument()
   })
 })

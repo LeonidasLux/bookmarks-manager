@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
+import { renderWithTheme } from '../test-utils'
 import userEvent from '@testing-library/user-event'
 import { FolderPicker } from '../../../extension/popup/components/FolderPicker'
 
@@ -29,7 +30,7 @@ beforeEach(() => {
   vi.spyOn(chrome.bookmarks, 'getTree').mockResolvedValue(mockTree)
 })
 
-/** 获取文件夹列表中指定标题的元素（title span，不匹配 path span） */
+/** 获取文件夹列表中指定标题的元素（title span） */
 function getFolderItem(title: string): HTMLElement | null {
   const allTitleSpans = screen.queryAllByText(title)
   return allTitleSpans.find(
@@ -44,10 +45,10 @@ describe('FolderPicker', () => {
     const onSave = vi.fn()
     const onCancel = vi.fn()
 
-    render(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
+    renderWithTheme(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
 
     await waitFor(() => {
-      expect(screen.getByText('保存书签到文件夹')).toBeInTheDocument()
+      expect(screen.getByText('保存书签')).toBeInTheDocument()
     })
 
     // 书签标题输入框应存在并已填入初始值
@@ -55,17 +56,17 @@ describe('FolderPicker', () => {
     expect(titleInput).toBeInTheDocument()
     expect(titleInput.tagName).toBe('INPUT')
 
-    expect(screen.getByPlaceholderText('搜索文件夹...')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('搜索目录...')).toBeInTheDocument()
   })
 
   it('应可编辑书签标题', async () => {
     const onSave = vi.fn()
     const onCancel = vi.fn()
 
-    render(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
+    renderWithTheme(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
 
     await waitFor(() => {
-      expect(screen.getByText('保存书签到文件夹')).toBeInTheDocument()
+      expect(screen.getByText('保存书签')).toBeInTheDocument()
     })
 
     const titleInput = screen.getByDisplayValue(INITIAL_TITLE) as HTMLInputElement
@@ -79,7 +80,7 @@ describe('FolderPicker', () => {
     const onSave = vi.fn()
     const onCancel = vi.fn()
 
-    render(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
+    renderWithTheme(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
 
     await waitFor(() => {
       expect(getFolderItem('书签栏')).toBeTruthy()
@@ -94,13 +95,13 @@ describe('FolderPicker', () => {
     const onSave = vi.fn()
     const onCancel = vi.fn()
 
-    render(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
+    renderWithTheme(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
 
     await waitFor(() => {
       expect(getFolderItem('书签栏')).toBeTruthy()
     })
 
-    const searchInput = screen.getByPlaceholderText('搜索文件夹...')
+    const searchInput = screen.getByPlaceholderText('搜索目录...')
     await userEvent.type(searchInput, '技术')
 
     expect(getFolderItem('技术')).toBeTruthy()
@@ -115,23 +116,23 @@ describe('FolderPicker', () => {
     const onSave = vi.fn()
     const onCancel = vi.fn()
 
-    render(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
+    renderWithTheme(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
 
     await waitFor(() => {
       expect(getFolderItem('书签栏')).toBeTruthy()
     })
 
-    const searchInput = screen.getByPlaceholderText('搜索文件夹...')
+    const searchInput = screen.getByPlaceholderText('搜索目录...')
     await userEvent.type(searchInput, '不存在的文件夹')
 
-    expect(screen.getByText('未找到匹配的文件夹')).toBeInTheDocument()
+    expect(screen.getByText('∅ 未找到匹配的目录')).toBeInTheDocument()
   })
 
   it('选中文件夹并点击保存应调用 onSave 并传入标题和文件夹 ID', async () => {
     const onSave = vi.fn()
     const onCancel = vi.fn()
 
-    render(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
+    renderWithTheme(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
 
     await waitFor(() => {
       expect(getFolderItem('技术')).toBeTruthy()
@@ -142,7 +143,7 @@ describe('FolderPicker', () => {
     await userEvent.click(techFolder)
 
     // 点击保存按钮
-    await userEvent.click(screen.getByText('保存到此处'))
+    await userEvent.click(screen.getByText('保存'))
 
     // 应传入文件夹 ID 和标题
     expect(onSave).toHaveBeenCalledWith('11', INITIAL_TITLE)
@@ -153,7 +154,7 @@ describe('FolderPicker', () => {
     const onSave = vi.fn()
     const onCancel = vi.fn()
 
-    render(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
+    renderWithTheme(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
 
     await waitFor(() => {
       expect(getFolderItem('书签栏')).toBeTruthy()
@@ -165,7 +166,7 @@ describe('FolderPicker', () => {
     await userEvent.type(titleInput, '修改后的标题')
 
     // 保存
-    await userEvent.click(screen.getByText('保存到此处'))
+    await userEvent.click(screen.getByText('保存'))
     expect(onSave).toHaveBeenCalledWith('1', '修改后的标题')
   })
 
@@ -173,10 +174,10 @@ describe('FolderPicker', () => {
     const onSave = vi.fn()
     const onCancel = vi.fn()
 
-    render(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
+    renderWithTheme(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
 
     await waitFor(() => {
-      expect(screen.getByText('保存书签到文件夹')).toBeInTheDocument()
+      expect(screen.getByText('保存书签')).toBeInTheDocument()
     })
 
     await userEvent.click(screen.getByText('取消'))
@@ -188,10 +189,10 @@ describe('FolderPicker', () => {
     const onSave = vi.fn()
     const onCancel = vi.fn()
 
-    const { container } = render(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
+    const { container } = renderWithTheme(<FolderPicker initialTitle={INITIAL_TITLE} onSave={onSave} onCancel={onCancel} />)
 
     await waitFor(() => {
-      expect(screen.getByText('保存书签到文件夹')).toBeInTheDocument()
+      expect(screen.getByText('保存书签')).toBeInTheDocument()
     })
 
     const overlay = container.firstChild as HTMLElement

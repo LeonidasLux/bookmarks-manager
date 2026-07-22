@@ -19,6 +19,8 @@ export interface AppConfig {
   autoSyncOnLoad: boolean
   /** 应用差异后是否清理空文件夹 */
   cleanEmptyFolders: boolean
+  /** 主题：'dark' | 'light' | 'system'（跟随系统） */
+  theme: 'dark' | 'light' | 'system'
 }
 
 export interface SyncResult {
@@ -62,4 +64,5 @@ export const DEFAULT_CONFIG: AppConfig = {
   syncIntervalHours: 6,
   autoSyncOnLoad: false,
   cleanEmptyFolders: true,
+  theme: 'system',
 }

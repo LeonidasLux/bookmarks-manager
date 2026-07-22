@@ -12,13 +12,28 @@ import { DiffReviewPanel } from './components/DiffReviewPanel'
 import { FolderPicker } from './components/FolderPicker'
 import { LoadingView } from './components/LoadingView'
 import { UnconfiguredView } from './components/UnconfiguredView'
-import { styles } from './styles'
+import { ThemeProvider, useTheme } from './theme'
 
 function openOptions() {
   chrome.runtime.openOptionsPage()
 }
 
+/**
+ * 外层：读取配置后注入 ThemeProvider
+ */
 function App() {
+  const { config } = useConfig()
+  return (
+    <ThemeProvider themeMode={config?.theme ?? 'system'}>
+      <AppShell />
+    </ThemeProvider>
+  )
+}
+
+/**
+ * 内层：所有状态 / 效果 / 渲染逻辑，可安全调用 useTheme()
+ */
+function AppShell() {
   const [showFolderPicker, setShowFolderPicker] = useState(false)
   const [initialSaveTitle, setInitialSaveTitle] = useState('')
   const [saveTabUrl, setSaveTabUrl] = useState('')
@@ -50,6 +65,7 @@ function App() {
     selectAllInGroup,
     invertSelectionInGroup,
   } = useDiffReview()
+  const { styles, colors } = useTheme()
 
   // ---- 快捷键：挂载时检查是否有待处理的保存请求 ----
   const triggerSaveBookmark = useCallback(async () => {
@@ -113,6 +129,33 @@ function App() {
     applySelected(config?.cleanEmptyFolders ?? true, currentFolder.id, loadFolder, setSyncStatus, setSyncSteps)
   }
 
+  // ---- 将状态消息中的 emoji 转为终端色彩 ----
+  const renderStatus = (msg: string) => {
+    if (!msg) return null
+    let color: string | undefined
+    let prefix: string | undefined
+
+    if (msg.startsWith('✅')) {
+      color = colors.green; prefix = '✓'
+    } else if (msg.startsWith('❌')) {
+      color = colors.red; prefix = '✗'
+    } else if (msg.startsWith('🔄')) {
+      color = colors.orange; prefix = '⟳'
+    } else {
+      color = colors.textMuted; prefix = '→'
+    }
+
+    const text = msg.replace(/^[✅❌🔄]/, '').trim()
+
+    return (
+      <span style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center', width: '100%' }}>
+        <span style={color ? { ...styles.statusDot, background: color, boxShadow: `0 0 4px ${color}60` } : undefined} />
+        <span>{prefix}</span>
+        {text}
+      </span>
+    )
+  }
+
   // ---- 渲染 ----
   if (pullDiffs) {
     return (
@@ -171,19 +214,23 @@ function App() {
 
       {syncStatus && (
         <div style={styles.status}>
-          {syncStatus}
+          {renderStatus(syncStatus)}
         </div>
       )}
 
       {syncSteps && syncSteps.length > 0 && (
         <div style={styles.syncLog}>
           <div style={styles.syncLogHeader}>
-            <span>📋 执行详情</span>
+            <span>
+              <span style={{ color: colors.accent }}>▼</span> 执行日志
+            </span>
             <span style={styles.syncLogClose} onClick={() => setSyncSteps(null)}>✕</span>
           </div>
           <div style={styles.syncLogBody}>
             {syncSteps.map((step, i) => (
-              <div key={i} style={styles.syncLogItem}>{step}</div>
+              <div key={i} style={styles.syncLogItem}>
+                <span style={{ color: colors.textDim }}>[{i + 1}]</span> {step}
+              </div>
             ))}
           </div>
         </div>

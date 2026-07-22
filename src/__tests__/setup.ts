@@ -74,3 +74,18 @@ const mockChrome = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ;(globalThis as any).chrome = mockChrome
+
+// jsdom 不提供 matchMedia，为 ThemeProvider 提供 mock
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }),
+})

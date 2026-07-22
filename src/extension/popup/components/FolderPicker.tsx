@@ -1,6 +1,6 @@
-import { type MouseEvent, useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import { useFolderPicker } from '../hooks/useFolderPicker'
-import { styles } from '../styles'
+import { useTheme } from '../theme'
 
 interface FolderPickerProps {
   initialTitle: string
@@ -8,11 +8,8 @@ interface FolderPickerProps {
   onCancel: () => void
 }
 
-function itemHover(e: MouseEvent<HTMLDivElement>, hover: boolean) {
-  e.currentTarget.style.background = hover ? '#f1f3f4' : 'transparent'
-}
-
 export function FolderPicker({ initialTitle, onSave, onCancel }: FolderPickerProps) {
+  const { styles, colors } = useTheme()
   const {
     filteredFolders,
     loading,
@@ -23,93 +20,111 @@ export function FolderPicker({ initialTitle, onSave, onCancel }: FolderPickerPro
   } = useFolderPicker()
 
   const [title, setTitle] = useState(initialTitle)
+  const [titleFocus, setTitleFocus] = useState(false)
+  const [searchFocus, setSearchFocus] = useState(false)
+  const [hoverItem, setHoverItem] = useState<string | null>(null)
+
+  const inputBorderStyle = { border: `1px solid ${colors.border}` } as React.CSSProperties
+  const inputFocusBorder = { border: `1px solid ${colors.accent}` } as React.CSSProperties
   const titleInputRef = useRef<HTMLInputElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
-  // 自动聚焦标题输入框
   useEffect(() => {
     titleInputRef.current?.focus()
     titleInputRef.current?.select()
   }, [])
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (selectedFolderId && title.trim()) {
       onSave(selectedFolderId, title.trim())
     }
-  }
+  }, [selectedFolderId, title, onSave])
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && selectedFolderId && title.trim()) {
       handleSave()
     } else if (e.key === 'Escape') {
       onCancel()
     }
-  }
+  }, [selectedFolderId, title, handleSave, onCancel])
 
   return (
-    <div style={pickerStyles.overlay} onClick={onCancel} onKeyDown={handleKeyDown}>
-      <div style={pickerStyles.container} onClick={e => e.stopPropagation()}>
+    <div style={styles.overlay} onClick={onCancel} onKeyDown={handleKeyDown}>
+      <div style={styles.modalContainer} onClick={e => e.stopPropagation()}>
         {/* 标题 */}
-        <div style={pickerStyles.header}>保存书签到文件夹</div>
+        <div style={styles.modalHeader}>
+          <span style={{ color: colors.accent }}>$</span> 保存书签
+        </div>
 
         {/* 书签标题编辑 */}
-        <div style={pickerStyles.fieldLabel}>
-          <span>书签标题</span>
+        <div style={styles.modalFieldLabel}>
+          书签标题
         </div>
-        <div style={pickerStyles.titleInputWrapper}>
-          <input
-            ref={titleInputRef}
-            type="text"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            style={pickerStyles.titleInput}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                e.stopPropagation()
-                searchInputRef.current?.focus()
-              }
-            }}
-          />
-        </div>
+        <input
+          ref={titleInputRef}
+          type="text"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          onFocus={() => setTitleFocus(true)}
+          onBlur={() => setTitleFocus(false)}
+          style={{
+            ...styles.modalInput,
+            ...(titleFocus ? inputFocusBorder : inputBorderStyle),
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.stopPropagation()
+              searchInputRef.current?.focus()
+            }
+          }}
+        />
 
         {/* 搜索框 */}
-        <div style={pickerStyles.fieldLabel}>
-          <span>目标文件夹</span>
+        <div style={styles.modalFieldLabel}>
+          目标目录
         </div>
         <input
           ref={searchInputRef}
           type="text"
-          placeholder="搜索文件夹..."
+          placeholder="搜索目录..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          style={pickerStyles.searchInput}
+          onFocus={() => setSearchFocus(true)}
+          onBlur={() => setSearchFocus(false)}
+          style={{
+            ...styles.modalSearchInput,
+            ...(searchFocus ? inputFocusBorder : inputBorderStyle),
+          }}
         />
 
         {/* 文件夹列表 */}
-        <div style={pickerStyles.list}>
+        <div style={styles.modalList}>
           {loading ? (
-            <div style={pickerStyles.emptyState}>加载中...</div>
+            <div style={styles.modalEmptyState}>
+              <span style={{ color: colors.accent }}>⟳</span> 加载中...
+            </div>
           ) : filteredFolders.length === 0 ? (
-            <div style={pickerStyles.emptyState}>未找到匹配的文件夹</div>
+            <div style={styles.modalEmptyState}>∅ 未找到匹配的目录</div>
           ) : (
             filteredFolders.map(f => (
               <div
                 key={f.id}
                 style={{
-                  ...pickerStyles.item,
-                  ...(f.id === selectedFolderId ? pickerStyles.itemSelected : {}),
+                  ...styles.modalItem,
+                  ...(f.id === selectedFolderId ? styles.modalItemSelected : {}),
+                  ...(hoverItem === f.id && f.id !== selectedFolderId ? { background: `${colors.accent}08` } : {}),
                 }}
                 onClick={() => setSelectedFolderId(f.id)}
-                onMouseEnter={e => itemHover(e, true)}
-                onMouseLeave={e => itemHover(e, false)}
+                onMouseEnter={() => setHoverItem(f.id)}
+                onMouseLeave={() => setHoverItem(null)}
               >
-                <span style={pickerStyles.itemIcon}>📁</span>
-                <div style={pickerStyles.itemContent}>
-                  <span style={pickerStyles.itemTitle}>{f.title}</span>
-                  <span style={pickerStyles.itemPath}>{f.path}</span>
+                <span style={styles.modalItemIcon}>📁</span>
+                <div style={styles.modalItemContent}>
+                  <span style={styles.modalItemTitle}>{f.title}</span>
+                  <span style={styles.modalItemPath}>{f.path}</span>
                 </div>
                 {f.id === selectedFolderId && (
-                  <span style={pickerStyles.checkmark}>✓</span>
+                  <span style={styles.modalCheckmark}>✓</span>
                 )}
               </div>
             ))
@@ -117,7 +132,7 @@ export function FolderPicker({ initialTitle, onSave, onCancel }: FolderPickerPro
         </div>
 
         {/* 操作按钮 */}
-        <div style={pickerStyles.actions}>
+        <div style={styles.modalActions}>
           <button
             onClick={onCancel}
             style={styles.btnSecondary}
@@ -129,135 +144,10 @@ export function FolderPicker({ initialTitle, onSave, onCancel }: FolderPickerPro
             disabled={!selectedFolderId || !title.trim()}
             style={(selectedFolderId && title.trim()) ? styles.btnPrimary : styles.btnPrimaryDisabled}
           >
-            保存到此处
+            保存
           </button>
         </div>
       </div>
     </div>
   )
-}
-
-const pickerStyles: Record<string, React.CSSProperties> = {
-  overlay: {
-    position: 'fixed',
-    inset: 0,
-    background: 'rgba(0, 0, 0, 0.4)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-  },
-  container: {
-    width: 360,
-    maxHeight: 460,
-    background: '#fff',
-    borderRadius: '12px',
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-  },
-  header: {
-    fontSize: '14px',
-    fontWeight: 600,
-    color: '#202124',
-    padding: '16px 16px 8px',
-  },
-  fieldLabel: {
-    fontSize: '11px',
-    fontWeight: 600,
-    color: '#9aa0a6',
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.5px',
-    margin: '4px 16px 2px',
-  },
-  titleInputWrapper: {
-    margin: '4px 16px 6px',
-  },
-  titleInput: {
-    width: '100%',
-    padding: '8px 12px',
-    border: '1px solid #dadce0',
-    borderRadius: '8px',
-    fontSize: '13px',
-    outline: 'none',
-    background: '#fff',
-    color: '#202124',
-    boxSizing: 'border-box' as const,
-    transition: 'border-color 0.15s',
-  } as React.CSSProperties,
-  searchInput: {
-    margin: '4px 16px 8px',
-    padding: '8px 12px',
-    border: '1px solid #dadce0',
-    borderRadius: '8px',
-    fontSize: '13px',
-    outline: 'none',
-    background: '#f8f9fa',
-    color: '#202124',
-    transition: 'border-color 0.15s, background 0.15s',
-  } as React.CSSProperties,
-  list: {
-    flex: 1,
-    overflowY: 'auto',
-    maxHeight: 200,
-    padding: '4px 8px',
-  },
-  emptyState: {
-    textAlign: 'center',
-    color: '#9aa0a6',
-    padding: '24px 0',
-    fontSize: '13px',
-  },
-  item: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '8px 10px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'background 0.1s',
-  },
-  itemSelected: {
-    background: '#e8f0fe',
-  },
-  itemIcon: {
-    fontSize: '16px',
-    flexShrink: 0,
-  },
-  itemContent: {
-    flex: 1,
-    minWidth: 0,
-  },
-  itemTitle: {
-    fontSize: '13px',
-    fontWeight: 500,
-    color: '#202124',
-    display: 'block',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  itemPath: {
-    fontSize: '11px',
-    color: '#9aa0a6',
-    display: 'block',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    marginTop: '1px',
-  },
-  checkmark: {
-    color: '#1a73e8',
-    fontSize: '14px',
-    fontWeight: 700,
-    flexShrink: 0,
-  },
-  actions: {
-    display: 'flex',
-    gap: '8px',
-    justifyContent: 'flex-end',
-    padding: '10px 16px 14px',
-    borderTop: '1px solid #f0f0f0',
-  },
 }

@@ -1,4 +1,5 @@
-import { styles } from '../styles'
+import { useState } from 'react'
+import { useTheme } from '../theme'
 
 interface ToolbarProps {
   pushLoading: boolean
@@ -9,30 +10,46 @@ interface ToolbarProps {
   onOpenOptions: () => void
 }
 
+function Btn({ title, loading, disabled, children, onClick }: {
+  title: string
+  loading?: boolean
+  disabled?: boolean
+  children: React.ReactNode
+  onClick: () => void
+}) {
+  const { styles, colors } = useTheme()
+  const [hover, setHover] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled || loading}
+      style={{
+        ...styles.iconBtn,
+        ...((hover && !disabled && !loading) ? styles.iconBtnHover : {}),
+        ...((disabled || loading) ? styles.iconBtnDisabled : {}),
+      }}
+      title={title}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      {loading ? (
+        <span style={{ color: colors.orange }}>⋯</span>
+      ) : children}
+    </button>
+  )
+}
+
 export function Toolbar({ pushLoading, pullLoading, onSaveCurrent, onPush, onPull, onOpenOptions }: ToolbarProps) {
+  const { styles, colors } = useTheme()
   return (
     <div style={styles.toolbar}>
-      <span style={{ flex: 1, fontWeight: 600, fontSize: '13px', color: '#202124', letterSpacing: '0.3px' }}>
-        Bookmarks Manager
+      <span style={styles.toolbarTitle}>
+        <span style={{ color: colors.accent }}>◆</span> bookmarks
       </span>
-      <button onClick={onSaveCurrent} style={styles.iconBtn} title="保存当前页面到其他书签">➕</button>
-      <button
-        onClick={onPush}
-        disabled={pushLoading}
-        style={{ ...styles.iconBtn, ...(pushLoading ? styles.iconBtnDisabled : {}) }}
-        title="同步到 GitHub（强制覆盖远程）"
-      >
-        {pushLoading ? '⋯' : '↑'}
-      </button>
-      <button
-        onClick={onPull}
-        disabled={pullLoading}
-        style={{ ...styles.iconBtn, ...(pullLoading ? styles.iconBtnDisabled : {}) }}
-        title="从 GitHub 拉取（对比差异后手动合并）"
-      >
-        {pullLoading ? '⋯' : '↓'}
-      </button>
-      <button onClick={onOpenOptions} style={styles.iconBtn} title="设置">⚙</button>
+      <Btn title="保存当前标签页到书签" onClick={onSaveCurrent}>+</Btn>
+      <Btn title="推送到 GitHub（强制覆盖远程）" loading={pushLoading} onClick={onPush}>↑</Btn>
+      <Btn title="从 GitHub 拉取（对比差异后手动合并）" loading={pullLoading} onClick={onPull}>↓</Btn>
+      <Btn title="设置" onClick={onOpenOptions}>⚙</Btn>
     </div>
   )
 }

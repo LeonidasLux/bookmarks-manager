@@ -4,6 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bookmarks Manager</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: "JetBrains Mono", "SF Mono", "Fira Code", "Consolas", monospace;
+        font-size: 12px;
+        line-height: 1.6;
+        overflow-x: hidden;
+        transition: background 0.2s, color 0.2s;
+      }
+      /* 滚动条暗色主题 */
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+      /* 输入框 focus 样式 */
+      input:focus { outline: none; }
+    </style>
   </head>
   <body>
     <div id="root"></div>

@@ -11,4 +11,4 @@ export const ROOT_FOLDER_META: Record<string, string> = {
 
 // ---- 差异标签 ----
 export const DIFF_LABEL: Record<string, string> = { added: '新增', deleted: '删除', modified: '修改' }
-export const DIFF_COLOR: Record<string, string> = { added: '#388e3c', deleted: '#d32f2f', modified: '#f57c00' }
+export const DIFF_COLOR: Record<string, string> = { added: '#3fb950', deleted: '#f85149', modified: '#d29922' }

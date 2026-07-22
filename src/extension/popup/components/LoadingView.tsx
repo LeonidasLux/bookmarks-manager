@@ -1,5 +1,10 @@
-import { styles } from '../styles'
+import { useTheme } from '../theme'
 
 export function LoadingView() {
-  return <div style={styles.center}>加载中...</div>
+  const { styles, colors } = useTheme()
+  return (
+    <div style={styles.center}>
+      <span style={{ color: colors.accent }}>⟳</span> 加载中...
+    </div>
+  )
 }

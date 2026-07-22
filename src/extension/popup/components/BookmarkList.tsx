@@ -1,6 +1,6 @@
-import type { MouseEvent } from 'react'
+import { useState } from 'react'
 import { isFolderNode } from '../hooks/useBookmarkNavigation'
-import { styles } from '../styles'
+import { useTheme } from '../theme'
 import { OTHER_BOOKMARKS_ID, MOBILE_BOOKMARKS_ID, ROOT_FOLDER_META } from '../constants'
 
 interface BookmarkListProps {
@@ -10,36 +10,75 @@ interface BookmarkListProps {
   onOpenBookmark: (url: string) => void
 }
 
-function folderHover(e: MouseEvent<HTMLSpanElement>, hover: boolean) {
-  e.currentTarget.style.background = hover ? '#e2e4e7' : '#f1f3f4'
-  e.currentTarget.style.borderColor = hover ? '#ccc' : '#e0e0e0'
+function FolderTag({ title, onClick }: { title: string; onClick: () => void }) {
+  const { styles, colors } = useTheme()
+  const [hover, setHover] = useState(false)
+  return (
+    <span
+      onClick={onClick}
+      style={{
+        ...styles.folderTag,
+        ...(hover ? {
+          background: `${colors.blue}15`,
+          borderColor: `${colors.blue}50`,
+          color: colors.blue,
+        } : {}),
+      }}
+      title={title}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      <span style={styles.folderIcon}>📁</span>
+      {title}
+    </span>
+  )
+}
+
+function BookmarkRow({ title, url, onClick }: { title: string; url: string; onClick: () => void }) {
+  const { styles, colors } = useTheme()
+  const [hover, setHover] = useState(false)
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        ...styles.bookmarkRow,
+        ...(hover ? { background: colors.surface } : {}),
+      }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      <span style={styles.bookmarkIcon}>🔗</span>
+      <div style={styles.bookmarkContent}>
+        <span style={styles.bookmarkTitle}>{title || '无标题'}</span>
+        <span style={styles.bookmarkMeta}>{url}</span>
+      </div>
+    </div>
+  )
 }
 
 export function BookmarkList({ currentItems, isHomeView, onEnterFolder, onOpenBookmark }: BookmarkListProps) {
+  const { styles, colors } = useTheme()
   const folders = currentItems.filter(n => isFolderNode(n))
   const bookmarks = currentItems.filter(n => !isFolderNode(n))
 
   if (currentItems.length === 0) {
-    return <div style={styles.empty}>暂无书签和文件夹</div>
+    return <div style={styles.empty}>∅ 暂无书签和文件夹</div>
   }
 
   return (
     <>
       {folders.length > 0 && (
         <>
-          <div style={styles.sectionLabel}>文件夹</div>
+          <div style={styles.sectionLabel}>
+            <span style={{ color: colors.blue }}>◆</span> 目录
+          </div>
           <div style={styles.tagContainer}>
             {folders.map(f => (
-              <span
+              <FolderTag
                 key={f.id}
-                style={styles.folderTag}
-                onClick={() => onEnterFolder(f.id, f.title)}
                 title={f.title}
-                onMouseEnter={e => folderHover(e, true)}
-                onMouseLeave={e => folderHover(e, false)}
-              >
-                📁 {f.title}
-              </span>
+                onClick={() => onEnterFolder(f.id, f.title)}
+              />
             ))}
           </div>
         </>
@@ -47,21 +86,17 @@ export function BookmarkList({ currentItems, isHomeView, onEnterFolder, onOpenBo
 
       {bookmarks.length > 0 && (
         <>
-          <div style={styles.sectionLabel}>书签</div>
+          <div style={styles.sectionLabel}>
+            <span style={{ color: colors.textMuted }}>#</span> 书签
+          </div>
           <div>
             {bookmarks.map(b => (
-              <div
+              <BookmarkRow
                 key={b.id}
-                style={styles.bookmarkRow}
+                title={b.title}
+                url={b.url!}
                 onClick={() => onOpenBookmark(b.url!)}
-                onMouseEnter={e => { e.currentTarget.style.background = '#f8f9fa' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-              >
-                <span style={styles.bookmarkTitle}>
-                  {b.title || '无标题'}
-                </span>
-                <span style={styles.bookmarkMeta}>{b.url}</span>
-              </div>
+              />
             ))}
           </div>
         </>
@@ -70,20 +105,17 @@ export function BookmarkList({ currentItems, isHomeView, onEnterFolder, onOpenBo
       {/* 首页底部：其他书签 + 移动设备书签 */}
       {isHomeView && (
         <>
-          <div style={styles.footerDivider} />
-          <div style={styles.footerLabel}>根级文件夹</div>
+          <div style={styles.divider} />
+          <div style={styles.footerLabel}>
+            <span style={{ color: colors.textDim }}>📌</span> 根级目录
+          </div>
           <div style={styles.tagContainer}>
             {[OTHER_BOOKMARKS_ID, MOBILE_BOOKMARKS_ID].map(id => (
-              <span
+              <FolderTag
                 key={id}
-                style={styles.folderTag}
-                onClick={() => onEnterFolder(id, ROOT_FOLDER_META[id])}
                 title={ROOT_FOLDER_META[id]}
-                onMouseEnter={e => folderHover(e, true)}
-                onMouseLeave={e => folderHover(e, false)}
-              >
-                📁 {ROOT_FOLDER_META[id]}
-              </span>
+                onClick={() => onEnterFolder(id, ROOT_FOLDER_META[id])}
+              />
             ))}
           </div>
         </>
