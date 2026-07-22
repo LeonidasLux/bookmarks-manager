@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react'
 import { useConfig } from './hooks/useConfig'
 import { useBookmarkNavigation } from './hooks/useBookmarkNavigation'
 import { useSync } from './hooks/useSync'
@@ -6,6 +7,7 @@ import { Toolbar } from './components/Toolbar'
 import { BreadcrumbNav } from './components/BreadcrumbNav'
 import { BookmarkList } from './components/BookmarkList'
 import { DiffReviewPanel } from './components/DiffReviewPanel'
+import { FolderPicker } from './components/FolderPicker'
 import { LoadingView } from './components/LoadingView'
 import { UnconfiguredView } from './components/UnconfiguredView'
 import { styles } from './styles'
@@ -15,6 +17,9 @@ function openOptions() {
 }
 
 function App() {
+  const [showFolderPicker, setShowFolderPicker] = useState(false)
+  const [initialSaveTitle, setInitialSaveTitle] = useState('')
+  const [saveTabUrl, setSaveTabUrl] = useState('')
   const { config, loading, syncStatus, setSyncStatus, isConfigured } = useConfig()
   const {
     currentFolder,
@@ -27,7 +32,7 @@ function App() {
     navigateToBreadcrumb,
     openBookmark,
   } = useBookmarkNavigation()
-  const { pushLoading, pullLoading, handlePush, handlePull, handleSaveCurrent } = useSync()
+  const { pushLoading, pullLoading, handlePush, handlePull, handleSaveCurrent, getCurrentTabInfo } = useSync()
   const {
     pullDiffs,
     selectedIds,
@@ -52,7 +57,21 @@ function App() {
     }
   }
 
-  const onSaveCurrent = () => handleSaveCurrent(currentFolder.id, loadFolder)
+  const onStartSave = useCallback(async () => {
+    const info = await getCurrentTabInfo()
+    if (!info) {
+      setSyncStatus('❌ 无法获取当前标签页信息')
+      return
+    }
+    setInitialSaveTitle(info.title)
+    setSaveTabUrl(info.url)
+    setShowFolderPicker(true)
+  }, [getCurrentTabInfo, setSyncStatus])
+
+  const onSaveToFolder = async (folderId: string, title: string) => {
+    setShowFolderPicker(false)
+    await handleSaveCurrent(folderId, title, saveTabUrl, currentFolder.id, loadFolder, setSyncStatus)
+  }
 
   const onApplySelected = () => {
     applySelected(config?.cleanEmptyFolders ?? true, currentFolder.id, loadFolder, setSyncStatus)
@@ -90,7 +109,7 @@ function App() {
       <Toolbar
         pushLoading={pushLoading}
         pullLoading={pullLoading}
-        onSaveCurrent={onSaveCurrent}
+        onSaveCurrent={onStartSave}
         onPush={onPush}
         onPull={onPull}
         onOpenOptions={openOptions}
@@ -116,6 +135,14 @@ function App() {
         <div style={styles.status}>
           {syncStatus}
         </div>
+      )}
+
+      {showFolderPicker && (
+        <FolderPicker
+          initialTitle={initialSaveTitle}
+          onSave={onSaveToFolder}
+          onCancel={() => setShowFolderPicker(false)}
+        />
       )}
     </div>
   )

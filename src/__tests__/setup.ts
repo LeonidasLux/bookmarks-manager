@@ -37,8 +37,10 @@ const mockChrome = {
   },
   tabs: {
     create: () => {},
-    query: (_info: unknown, cb: (tabs: chrome.tabs.Tab[]) => void) => {
-      cb([])
+    query: (_info: unknown, cb?: (tabs: chrome.tabs.Tab[]) => void): Promise<chrome.tabs.Tab[]> => {
+      const tabs: chrome.tabs.Tab[] = [{ id: 1, url: 'https://example.com', title: 'Test' } as chrome.tabs.Tab]
+      if (cb) cb(tabs)
+      return Promise.resolve(tabs)
     },
   },
   action: {

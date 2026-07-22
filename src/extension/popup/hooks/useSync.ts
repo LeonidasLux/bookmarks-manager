@@ -46,23 +46,39 @@ export function useSync() {
     })
   }, [])
 
+  /** 获取当前标签页信息（url 和 title） */
+  const getCurrentTabInfo = useCallback(async (): Promise<{ url: string; title: string } | null> => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (!tab?.url) return null
+    return { url: tab.url, title: tab.title || '' }
+  }, [])
+
   const handleSaveCurrent = useCallback(async (
+    targetFolderId: string,
+    title: string,
+    url: string,
     currentFolderId: string,
     loadFolder: (id: string) => Promise<void>,
-  ) => {
-    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-      const tab = tabs[0]
-      if (!tab?.url || !tab?.title) return
+    setSyncStatus?: (s: string | null) => void,
+  ): Promise<boolean> => {
+    try {
+      setSyncStatus?.('🔄 保存书签...')
 
       await chrome.bookmarks.create({
-        parentId: '2',
-        title: tab.title,
-        url: tab.url,
+        parentId: targetFolderId,
+        title,
+        url,
       })
 
       await loadFolder(currentFolderId)
-    })
+      setSyncStatus?.(`✅ 已保存到书签 — ${new Date().toLocaleString('zh-CN')}`)
+      return true
+    } catch (err) {
+      console.error('保存书签失败:', err)
+      setSyncStatus?.(`❌ 保存书签失败: ${err instanceof Error ? err.message : '未知错误'}`)
+      return false
+    }
   }, [])
 
-  return { pushLoading, pullLoading, handlePush, handlePull, handleSaveCurrent }
+  return { pushLoading, pullLoading, handlePush, handlePull, handleSaveCurrent, getCurrentTabInfo }
 }
