@@ -372,6 +372,47 @@ export const styles = {
     fontWeight: 500,
   } as React.CSSProperties,
 
+  syncLog: {
+    marginTop: '4px',
+    border: '1px solid #e0e0e0',
+    borderRadius: '6px',
+    background: '#fafafa',
+    fontSize: '11px',
+    fontFamily: '"SF Mono", "Menlo", "Monaco", "Consolas", monospace',
+  } as React.CSSProperties,
+
+  syncLogHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '5px 8px',
+    borderBottom: '1px solid #e0e0e0',
+    color: '#5f6368',
+    fontSize: '11px',
+    fontWeight: 600,
+  } as React.CSSProperties,
+
+  syncLogClose: {
+    cursor: 'pointer',
+    color: '#9aa0a6',
+    fontSize: '12px',
+    padding: '0 2px',
+    lineHeight: 1,
+  } as React.CSSProperties,
+
+  syncLogBody: {
+    padding: '4px 8px',
+    maxHeight: 120,
+    overflowY: 'auto' as const,
+  } as React.CSSProperties,
+
+  syncLogItem: {
+    padding: '2px 0',
+    color: '#5f6368',
+    lineHeight: 1.5,
+    wordBreak: 'break-all' as const,
+  } as React.CSSProperties,
+
   btnPrimaryDisabled: {
     padding: '6px 14px',
     border: 'none',
@@ -381,5 +422,61 @@ export const styles = {
     cursor: 'not-allowed' as const,
     fontSize: '12px',
     fontWeight: 500,
+  } as React.CSSProperties,
+
+  // ---- 书签统计概览（单行紧凑） ----
+  statsBar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '6px 10px',
+    marginBottom: '8px',
+    background: '#f8f9fa',
+    borderRadius: '8px',
+    border: '1px solid #e8eaed',
+    fontSize: '12px',
+    color: '#5f6368',
+    overflow: 'hidden',
+  } as React.CSSProperties,
+
+  statsBarItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '3px',
+    whiteSpace: 'nowrap' as const,
+  } as React.CSSProperties,
+
+  statsBarNum: {
+    fontWeight: 600,
+    color: '#202124',
+  } as React.CSSProperties,
+
+  statsBarSep: {
+    color: '#dadce0',
+    userSelect: 'none' as const,
+  } as React.CSSProperties,
+
+  statsBarDivider: {
+    width: 1,
+    height: 12,
+    background: '#dadce0',
+    flexShrink: 0,
+  } as React.CSSProperties,
+
+  statsBarFolders: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    overflow: 'hidden',
+    flex: 1,
+    minWidth: 0,
+  } as React.CSSProperties,
+
+  statsBarFolder: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '2px',
+    whiteSpace: 'nowrap' as const,
+    color: '#5f6368',
   } as React.CSSProperties,
 }

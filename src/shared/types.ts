@@ -51,6 +51,8 @@ export interface PullDiffResult {
   /** 应用所有差异后可能变空的文件夹路径列表 */
   emptyFolders?: string[]
   error?: string
+  /** 调试信息：每步执行详情 */
+  steps?: string[]
 }
 
 export const DEFAULT_CONFIG: AppConfig = {

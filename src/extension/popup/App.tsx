@@ -1,11 +1,13 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useConfig } from './hooks/useConfig'
 import { useBookmarkNavigation } from './hooks/useBookmarkNavigation'
+import { useBookmarkStats } from './hooks/useBookmarkStats'
 import { useSync } from './hooks/useSync'
 import { useDiffReview } from './hooks/useDiffReview'
 import { Toolbar } from './components/Toolbar'
 import { BreadcrumbNav } from './components/BreadcrumbNav'
 import { BookmarkList } from './components/BookmarkList'
+import { BookmarkStats } from './components/BookmarkStats'
 import { DiffReviewPanel } from './components/DiffReviewPanel'
 import { FolderPicker } from './components/FolderPicker'
 import { LoadingView } from './components/LoadingView'
@@ -20,6 +22,7 @@ function App() {
   const [showFolderPicker, setShowFolderPicker] = useState(false)
   const [initialSaveTitle, setInitialSaveTitle] = useState('')
   const [saveTabUrl, setSaveTabUrl] = useState('')
+  const [syncSteps, setSyncSteps] = useState<string[] | null>(null)
   const { config, loading, syncStatus, setSyncStatus, isConfigured } = useConfig()
   const {
     currentFolder,
@@ -32,6 +35,7 @@ function App() {
     navigateToBreadcrumb,
     openBookmark,
   } = useBookmarkNavigation()
+  const stats = useBookmarkStats()
   const { pushLoading, pullLoading, handlePush, handlePull, handleSaveCurrent, getCurrentTabInfo } = useSync()
   const {
     pullDiffs,
@@ -79,11 +83,12 @@ function App() {
   }, [triggerSaveBookmark])
 
   // ---- 同步操作包装 ----
-  const onPush = () => handlePush(setSyncStatus)
+  const onPush = () => handlePush(setSyncStatus, setSyncSteps)
 
   const onPull = async () => {
-    const res = await handlePull(setSyncStatus)
+    const res = await handlePull(setSyncStatus, setSyncSteps)
     if (res.success && res.diffs.length > 0) {
+      setSyncSteps(null)
       openReview(res.diffs, res.emptyFolders ?? [])
     }
   }
@@ -105,7 +110,7 @@ function App() {
   }
 
   const onApplySelected = () => {
-    applySelected(config?.cleanEmptyFolders ?? true, currentFolder.id, loadFolder, setSyncStatus)
+    applySelected(config?.cleanEmptyFolders ?? true, currentFolder.id, loadFolder, setSyncStatus, setSyncSteps)
   }
 
   // ---- 渲染 ----
@@ -146,6 +151,8 @@ function App() {
         onOpenOptions={openOptions}
       />
 
+      {isHomeView && <BookmarkStats stats={stats} />}
+
       {!isHomeView && (
         <BreadcrumbNav
           breadcrumbs={breadcrumbs}
@@ -165,6 +172,20 @@ function App() {
       {syncStatus && (
         <div style={styles.status}>
           {syncStatus}
+        </div>
+      )}
+
+      {syncSteps && syncSteps.length > 0 && (
+        <div style={styles.syncLog}>
+          <div style={styles.syncLogHeader}>
+            <span>📋 执行详情</span>
+            <span style={styles.syncLogClose} onClick={() => setSyncSteps(null)}>✕</span>
+          </div>
+          <div style={styles.syncLogBody}>
+            {syncSteps.map((step, i) => (
+              <div key={i} style={styles.syncLogItem}>{step}</div>
+            ))}
+          </div>
         </div>
       )}
 

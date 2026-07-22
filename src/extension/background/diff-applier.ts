@@ -85,10 +85,9 @@ export async function applyDiffsToBrowser(
   }
 }
 
-/** 在扩展图标上显示执行结果 */
-export function showResult(steps: string[], ok: boolean) {
+/** 在扩展图标上显示执行结果（仅 badge，不污染标题） */
+export function showResult(_steps: string[], ok: boolean) {
   chrome.action.setBadgeText({ text: ok ? 'ok' : 'ERR' })
   chrome.action.setBadgeBackgroundColor({ color: ok ? '#4caf50' : '#f44336' })
-  chrome.action.setTitle({ title: steps.join(' | ') })
   setTimeout(() => chrome.action.setBadgeText({ text: '' }), 5000)
 }

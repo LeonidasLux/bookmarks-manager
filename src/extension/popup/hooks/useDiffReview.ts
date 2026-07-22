@@ -45,6 +45,7 @@ export function useDiffReview() {
     currentFolderId: string,
     loadFolder: (id: string) => Promise<void>,
     setSyncStatus: (s: string | null) => void,
+    setSyncSteps?: (steps: string[]) => void,
   ) => {
     const selectedDiffs = pullDiffs!.filter(d => selectedIds.includes(d.remote.id))
     chrome.runtime.sendMessage({
@@ -52,6 +53,7 @@ export function useDiffReview() {
       selectedDiffs,
       cleanEmptyFolders: configCleanEmpty,
     }, async (res: SyncResult) => {
+      setSyncSteps?.(res.steps ?? [])
       if (res.success) {
         setSyncStatus(`✅ 已应用 ${selectedDiffs.length} 项变更 — ${new Date(res.timestamp).toLocaleString('zh-CN')}`)
         await loadFolder(currentFolderId)

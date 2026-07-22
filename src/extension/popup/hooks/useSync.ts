@@ -10,11 +10,13 @@ export function useSync() {
 
   const handlePush = useCallback((
     setSyncStatus: (s: string | null) => void,
+    setSyncSteps?: (steps: string[]) => void,
   ) => {
     setPushLoading(true)
     setSyncStatus('🔄 推送到 GitHub...')
     chrome.runtime.sendMessage({ type: 'PUSH_TO_GITHUB' }, (res: SyncResult) => {
       setPushLoading(false)
+      setSyncSteps?.(res.steps ?? [])
       if (res.success) {
         setSyncStatus(`✅ 推送成功 — ${new Date(res.timestamp).toLocaleString('zh-CN')}`)
       } else {
@@ -26,12 +28,14 @@ export function useSync() {
   /** 返回拉取结果，由调用方决定如何处理差异 */
   const handlePull = useCallback((
     setSyncStatus: (s: string | null) => void,
+    setSyncSteps?: (steps: string[]) => void,
   ): Promise<PullDiffResult> => {
     return new Promise((resolve) => {
       setPullLoading(true)
       setSyncStatus('🔄 从 GitHub 拉取...')
       chrome.runtime.sendMessage({ type: 'PULL_FROM_GITHUB' }, (res: PullDiffResult) => {
         setPullLoading(false)
+        setSyncSteps?.(res.steps ?? [])
         if (res.success) {
           if (res.diffs.length === 0) {
             setSyncStatus('✅ 远程无变更，本地已是最新')
