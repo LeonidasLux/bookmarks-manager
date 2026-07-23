@@ -40,6 +40,7 @@ function App() {
   const { config, saved, save, updateField } = useConfigForm()
   const { commands } = useCommands()
   const [focusField, setFocusField] = useState<string | null>(null)
+  const [showToken, setShowToken] = useState(false)
   const [systemDark, setSystemDark] = useState(
     () => window.matchMedia('(prefers-color-scheme: dark)').matches,
   )
@@ -134,18 +135,53 @@ function App() {
         <label style={{ display: 'block', marginBottom: '0.375rem', fontSize: '12px', fontWeight: 500, color: colors.textMuted }}>
           <span style={{ color: colors.accent }}>$</span> GITHUB_TOKEN
         </label>
-        <input
-          type="password"
-          value={config?.githubToken ?? ''}
-          onChange={(e) => updateField('githubToken', e.target.value)}
-          onFocus={() => setFocusField('token')}
-          onBlur={() => setFocusField(null)}
-          style={{
-            ...inputBase,
-            ...(focusField === 'token' ? themedFocus : {}),
-          }}
-          placeholder="ghp_..."
-        />
+        <div style={{ position: 'relative' }}>
+          <input
+            type={showToken ? 'text' : 'password'}
+            value={config?.githubToken ?? ''}
+            onChange={(e) => updateField('githubToken', e.target.value)}
+            onFocus={() => setFocusField('token')}
+            onBlur={() => setFocusField(null)}
+            style={{
+              ...inputBase,
+              paddingRight: 40,
+              ...(focusField === 'token' ? themedFocus : {}),
+            }}
+            placeholder="ghp_..."
+          />
+          <button
+            type="button"
+            onClick={() => setShowToken(prev => !prev)}
+            onFocus={() => setFocusField('token')}
+            onBlur={() => setFocusField(null)}
+            style={{
+              position: 'absolute',
+              right: 4,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '4px 6px',
+              color: colors.textMuted,
+              fontSize: '14px',
+              lineHeight: 1,
+            }}
+            title={showToken ? '隐藏 Token' : '显示 Token'}
+          >
+            {showToken ? '🙈' : '👁️'}
+          </button>
+        </div>
+        <p style={{ fontSize: '11px', color: colors.textDim, margin: '0.25rem 0 0 0', fontFamily: font }}>
+          # 从{' '}
+          <a
+            href="https://github.com/settings/tokens"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: colors.accent, textDecoration: 'none' }}
+          >github.com/settings/tokens</a>{' '}
+          生成 Token（需勾选 <code style={{ background: colors.surface, padding: '1px 4px', borderRadius: '3px' }}>repo</code> 权限）
+        </p>
       </div>
 
       <div style={{ marginBottom: '1rem' }}>
