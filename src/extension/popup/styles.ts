@@ -229,11 +229,10 @@ export function createStyles(colors: ColorScheme) {
     } as React.CSSProperties,
 
     bookmarkIcon: {
-      fontSize: '12px',
-      flexShrink: 0,
-      color: colors.blue,
       width: 16,
-      textAlign: 'center' as const,
+      height: 16,
+      borderRadius: 2,
+      flexShrink: 0,
     } as React.CSSProperties,
 
     bookmarkContent: {

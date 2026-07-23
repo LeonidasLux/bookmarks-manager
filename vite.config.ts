@@ -11,7 +11,7 @@ export default defineConfig({
         name: 'Bookmarks Manager',
         version: '0.1.1',
         description: 'Browser bookmark manager with GitHub sync',
-        permissions: ['storage', 'bookmarks', 'activeTab'],
+        permissions: ['storage', 'bookmarks', 'activeTab', 'favicon'],
         host_permissions: ['https://api.github.com/*'],
         action: {
           default_popup: 'src/extension/popup/index.html',

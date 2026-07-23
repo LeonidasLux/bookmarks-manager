@@ -37,6 +37,8 @@ function FolderTag({ title, onClick }: { title: string; onClick: () => void }) {
 function BookmarkRow({ title, url, onClick }: { title: string; url: string; onClick: () => void }) {
   const { styles, colors } = useTheme()
   const [hover, setHover] = useState(false)
+  const [imgFailed, setImgFailed] = useState(false)
+  const faviconUrl = `chrome://favicon/size/16/${url}`
   return (
     <div
       onClick={onClick}
@@ -47,7 +49,23 @@ function BookmarkRow({ title, url, onClick }: { title: string; url: string; onCl
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <span style={styles.bookmarkIcon}>🔗</span>
+      {imgFailed ? (
+        <span style={{
+          width: 16, height: 16, flexShrink: 0, display: 'inline-flex',
+          alignItems: 'center', justifyContent: 'center',
+          fontSize: 11, fontWeight: 700, color: colors.textMuted,
+          borderRadius: 2, background: colors.surfaceAlt,
+        }}>
+          {url ? new URL(url).hostname.charAt(0).toUpperCase() : '?'}
+        </span>
+      ) : (
+        <img
+          src={faviconUrl}
+          style={styles.bookmarkIcon}
+          onError={() => setImgFailed(true)}
+          alt=""
+        />
+      )}
       <div style={styles.bookmarkContent}>
         <span style={styles.bookmarkTitle}>{title || '无标题'}</span>
         <span style={styles.bookmarkMeta}>{url}</span>

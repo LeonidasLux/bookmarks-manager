@@ -22,6 +22,7 @@ function Btn({ title, loading, disabled, children, onClick }: {
   const [hover, setHover] = useState(false)
   return (
     <button
+      onClick={onClick}
       style={{
         ...styles.iconBtn,
         ...((hover && !disabled && !loading) ? styles.iconBtnHover : {}),
