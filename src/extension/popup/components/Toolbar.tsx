@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTheme } from '../theme'
+import { BookmarkIcon, PushIcon, PullIcon, SettingsIcon } from './Icons'
 
 interface ToolbarProps {
   pushLoading: boolean
@@ -21,8 +22,6 @@ function Btn({ title, loading, disabled, children, onClick }: {
   const [hover, setHover] = useState(false)
   return (
     <button
-      onClick={onClick}
-      disabled={disabled || loading}
       style={{
         ...styles.iconBtn,
         ...((hover && !disabled && !loading) ? styles.iconBtnHover : {}),
@@ -46,10 +45,10 @@ export function Toolbar({ pushLoading, pullLoading, onSaveCurrent, onPush, onPul
       <span style={styles.toolbarTitle}>
         <span style={{ color: colors.accent }}>◆</span> bookmarks
       </span>
-      <Btn title="保存当前标签页到书签" onClick={onSaveCurrent}>+</Btn>
-      <Btn title="推送到 GitHub（强制覆盖远程）" loading={pushLoading} onClick={onPush}>↑</Btn>
-      <Btn title="从 GitHub 拉取（对比差异后手动合并）" loading={pullLoading} onClick={onPull}>↓</Btn>
-      <Btn title="设置" onClick={onOpenOptions}>⚙</Btn>
+      <Btn title="保存当前标签页到书签" onClick={onSaveCurrent}><BookmarkIcon /></Btn>
+      <Btn title="推送到 GitHub（强制覆盖远程）" loading={pushLoading} onClick={onPush}><PushIcon /></Btn>
+      <Btn title="从 GitHub 拉取（对比差异后手动合并）" loading={pullLoading} onClick={onPull}><PullIcon /></Btn>
+      <Btn title="设置" onClick={onOpenOptions}><SettingsIcon /></Btn>
     </div>
   )
 }

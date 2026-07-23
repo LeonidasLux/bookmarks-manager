@@ -84,9 +84,9 @@ export function createStyles(colors: ColorScheme) {
     // ─── 工具栏 ───
     toolbar: {
       display: 'flex',
-      gap: '2px',
+      gap: '4px',
       alignItems: 'center',
-      marginBottom: '8px',
+      marginBottom: '10px',
       paddingBottom: '8px',
       borderBottom: `1px solid ${colors.borderLight}`,
     } as React.CSSProperties,
