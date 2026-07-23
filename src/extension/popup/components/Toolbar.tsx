@@ -23,6 +23,7 @@ function Btn({ title, loading, disabled, children, onClick }: {
   return (
     <button
       onClick={onClick}
+      disabled={disabled || loading}
       style={{
         ...styles.iconBtn,
         ...((hover && !disabled && !loading) ? styles.iconBtnHover : {}),

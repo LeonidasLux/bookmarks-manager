@@ -3,6 +3,7 @@ import '@testing-library/jest-dom'
 // Mock chrome API globally for tests
 const mockChrome = {
   runtime: {
+    getURL: (path: string) => `chrome-extension://test-id/${path}`,
     openOptionsPage: () => {},
     sendMessage: (_msg: unknown, cb?: (res: unknown) => void) => {
       if (cb) cb({})

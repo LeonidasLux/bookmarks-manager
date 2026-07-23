@@ -38,7 +38,9 @@ function BookmarkRow({ title, url, onClick }: { title: string; url: string; onCl
   const { styles, colors } = useTheme()
   const [hover, setHover] = useState(false)
   const [imgFailed, setImgFailed] = useState(false)
-  const faviconUrl = `chrome://favicon/size/16/${url}`
+  const faviconUrl = url
+    ? chrome.runtime.getURL('_favicon/') + `?pageUrl=${encodeURIComponent(url)}&size=16`
+    : undefined
   return (
     <div
       onClick={onClick}
