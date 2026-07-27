@@ -50,7 +50,7 @@ function AppShell() {
     navigateToBreadcrumb,
     openBookmark,
   } = useBookmarkNavigation()
-  const stats = useBookmarkStats()
+  const { stats, refreshStats } = useBookmarkStats()
   const { pushLoading, pullLoading, handlePush, handlePull, handleSaveCurrent, getCurrentTabInfo } = useSync()
   const {
     pullDiffs,
@@ -126,7 +126,7 @@ function AppShell() {
   }
 
   const onApplySelected = () => {
-    applySelected(config?.cleanEmptyFolders ?? true, currentFolder.id, loadFolder, setSyncStatus, setSyncSteps)
+    applySelected(config?.cleanEmptyFolders ?? true, currentFolder.id, loadFolder, setSyncStatus, setSyncSteps, refreshStats)
   }
 
   // ---- 将状态消息中的 emoji 转为终端色彩 ----

@@ -46,6 +46,7 @@ export function useDiffReview() {
     loadFolder: (id: string) => Promise<void>,
     setSyncStatus: (s: string | null) => void,
     setSyncSteps?: (steps: string[]) => void,
+    refreshStats?: () => void,
   ) => {
     const selectedDiffs = pullDiffs!.filter(d => selectedIds.includes(d.remote.id))
     chrome.runtime.sendMessage({
@@ -57,6 +58,7 @@ export function useDiffReview() {
       if (res.success) {
         setSyncStatus(`✅ 已应用 ${selectedDiffs.length} 项变更 — ${new Date(res.timestamp).toLocaleString('zh-CN')}`)
         await loadFolder(currentFolderId)
+        refreshStats?.()
       } else {
         setSyncStatus(`❌ 应用失败: ${res.error}`)
       }

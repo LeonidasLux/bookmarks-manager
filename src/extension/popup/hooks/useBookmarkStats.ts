@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 /** 单根级文件夹的统计 */
 export interface FolderStats {
@@ -46,12 +46,15 @@ function countNode(node: chrome.bookmarks.BookmarkTreeNode): { bookmarks: number
   return { bookmarks, folders }
 }
 
-export function useBookmarkStats(): BookmarkStatsData {
+export function useBookmarkStats() {
   const [stats, setStats] = useState<BookmarkStatsData>({
     totalBookmarks: 0,
     totalFolders: 0,
     rootFolders: [],
   })
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const refreshStats = useCallback(() => setRefreshKey(k => k + 1), [])
 
   useEffect(() => {
     let cancelled = false
@@ -90,9 +93,9 @@ export function useBookmarkStats(): BookmarkStatsData {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [refreshKey])
 
-  return stats
+  return { stats, refreshStats }
 }
 
 /** 在树中按 id 查找节点 */

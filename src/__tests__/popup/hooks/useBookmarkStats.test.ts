@@ -32,9 +32,9 @@ describe('useBookmarkStats', () => {
       await new Promise(resolve => setTimeout(resolve, 0))
     })
 
-    expect(result.current.totalBookmarks).toBe(0)
-    expect(result.current.totalFolders).toBe(0)
-    expect(result.current.rootFolders).toEqual([])
+    expect(result.current.stats.totalBookmarks).toBe(0)
+    expect(result.current.stats.totalFolders).toBe(0)
+    expect(result.current.stats.rootFolders).toEqual([])
   })
 
   it('应正确统计书签和文件夹数量', async () => {
@@ -66,12 +66,12 @@ describe('useBookmarkStats', () => {
       await new Promise(resolve => setTimeout(resolve, 0))
     })
 
-    expect(result.current.totalBookmarks).toBe(5)
-    expect(result.current.totalFolders).toBe(3) // 工作、学习 2 个子文件夹 + 移动设备书签（空文件夹）
-    expect(result.current.rootFolders).toHaveLength(3)
+    expect(result.current.stats.totalBookmarks).toBe(5)
+    expect(result.current.stats.totalFolders).toBe(3) // 工作、学习 2 个子文件夹 + 移动设备书签（空文件夹）
+    expect(result.current.stats.rootFolders).toHaveLength(3)
 
     // 书签栏：4 个书签 + 2 个文件夹（工作、学习）
-    expect(result.current.rootFolders[0]).toEqual({
+    expect(result.current.stats.rootFolders[0]).toEqual({
       id: '1',
       title: '书签栏',
       bookmarks: 4,
@@ -79,7 +79,7 @@ describe('useBookmarkStats', () => {
     })
 
     // 其他书签：1 个书签，无子文件夹
-    expect(result.current.rootFolders[1]).toEqual({
+    expect(result.current.stats.rootFolders[1]).toEqual({
       id: '2',
       title: '其他书签',
       bookmarks: 1,
@@ -87,12 +87,44 @@ describe('useBookmarkStats', () => {
     })
 
     // 移动设备书签：空文件夹
-    expect(result.current.rootFolders[2]).toEqual({
+    expect(result.current.stats.rootFolders[2]).toEqual({
       id: '3',
       title: '移动设备书签',
       bookmarks: 0,
       folders: 1,
     })
+  })
+
+  it('refreshStats 应触发重新统计', async () => {
+    let callCount = 0
+    vi.spyOn(chrome.bookmarks, 'getTree').mockImplementation(async () => {
+      callCount++
+      return buildTree(
+        makeFolder('1', '书签栏', [
+          makeBookmark('11', 'GitHub', 'https://github.com'),
+        ]),
+        makeFolder('2', '其他书签', []),
+        makeFolder('3', '移动设备书签', []),
+      )
+    })
+
+    const { result } = renderHook(() => useBookmarkStats())
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0))
+    })
+
+    expect(result.current.stats.totalBookmarks).toBe(1)
+    expect(callCount).toBe(1)
+
+    // 模拟书签变化后刷新
+    await act(async () => {
+      result.current.refreshStats()
+      await new Promise(resolve => setTimeout(resolve, 0))
+    })
+
+    expect(callCount).toBe(2)
+    expect(result.current.stats.totalBookmarks).toBe(1)
   })
 
   it('应正确处理文件夹嵌套层级', async () => {
@@ -126,8 +158,8 @@ describe('useBookmarkStats', () => {
       await new Promise(resolve => setTimeout(resolve, 0))
     })
 
-    expect(result.current.totalBookmarks).toBe(5)
-    expect(result.current.totalFolders).toBe(5) // A, A1, A2, A2a, B
-    expect(result.current.rootFolders).toHaveLength(2)
+    expect(result.current.stats.totalBookmarks).toBe(5)
+    expect(result.current.stats.totalFolders).toBe(5) // A, A1, A2, A2a, B
+    expect(result.current.stats.rootFolders).toHaveLength(2)
   })
 })
