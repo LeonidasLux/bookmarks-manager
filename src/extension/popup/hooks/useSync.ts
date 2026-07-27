@@ -58,34 +58,46 @@ export function useSync() {
   const [pushLoading, setPushLoading] = useState(false)
   const [pullLoading, setPullLoading] = useState(false)
 
+  /** 获取所有书签预览（扁平化），用于推送前确认 */
+  const getPushPreview = useCallback(async (): Promise<Bookmark[]> => {
+    const tree = await chrome.bookmarks.getTree()
+    const bookmarks = await flattenBookmarksTree(tree)
+    console.log('推送到 GitHub 的书签数据:', JSON.stringify(bookmarks, null, 2))
+    return bookmarks
+  }, [])
+
+  /** 执行推送（确认后调用） */
+  const executePush = useCallback((
+    setSyncStatus: (s: string | null) => void,
+    setSyncSteps?: (steps: string[]) => void,
+  ) => {
+    setPushLoading(true)
+    setSyncStatus('🔄 推送到 GitHub...')
+    chrome.runtime.sendMessage({ type: 'PUSH_TO_GITHUB' }, (res: SyncResult) => {
+      setPushLoading(false)
+      setSyncSteps?.(res.steps ?? [])
+      if (res.success) {
+        setSyncStatus(`✅ 推送成功 — ${new Date(res.timestamp).toLocaleString('zh-CN')}`)
+      } else {
+        setSyncStatus(`❌ 推送失败: ${res.error}`)
+      }
+    })
+  }, [])
+
+  /** 完整流程：预览 → 原生确认 → 推送（保留给非模态场景） */
   const handlePush = useCallback((
     setSyncStatus: (s: string | null) => void,
     setSyncSteps?: (steps: string[]) => void,
   ) => {
     ;(async () => {
-      // 收集书签数据用于二次确认和打印
-      const tree = await chrome.bookmarks.getTree()
-      const bookmarks = await flattenBookmarksTree(tree)
-      console.log('推送到 GitHub 的书签数据:', JSON.stringify(bookmarks, null, 2))
-
+      const bookmarks = await getPushPreview()
       if (!confirm(`确认将 ${bookmarks.length} 条书签推送到 GitHub？\n该操作将强制覆盖远程数据。`)) {
         setSyncStatus('已取消推送')
         return
       }
-
-      setPushLoading(true)
-      setSyncStatus('🔄 推送到 GitHub...')
-      chrome.runtime.sendMessage({ type: 'PUSH_TO_GITHUB' }, (res: SyncResult) => {
-        setPushLoading(false)
-        setSyncSteps?.(res.steps ?? [])
-        if (res.success) {
-          setSyncStatus(`✅ 推送成功 — ${new Date(res.timestamp).toLocaleString('zh-CN')}`)
-        } else {
-          setSyncStatus(`❌ 推送失败: ${res.error}`)
-        }
-      })
+      executePush(setSyncStatus, setSyncSteps)
     })()
-  }, [])
+  }, [getPushPreview, executePush])
 
   /** 返回拉取结果，由调用方决定如何处理差异 */
   const handlePull = useCallback((
@@ -146,5 +158,5 @@ export function useSync() {
     }
   }, [])
 
-  return { pushLoading, pullLoading, handlePush, handlePull, handleSaveCurrent, getCurrentTabInfo }
+  return { pushLoading, pullLoading, getPushPreview, executePush, handlePush, handlePull, handleSaveCurrent, getCurrentTabInfo }
 }

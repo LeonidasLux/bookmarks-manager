@@ -9,8 +9,10 @@ import { BreadcrumbNav } from './components/BreadcrumbNav'
 import { BookmarkList } from './components/BookmarkList'
 import { BookmarkStats } from './components/BookmarkStats'
 import { DiffReviewPanel } from './components/DiffReviewPanel'
+import { PushConfirmModal } from './components/PushConfirmModal'
 import { FolderPicker } from './components/FolderPicker'
 import { LoadingView } from './components/LoadingView'
+import type { Bookmark } from '../../shared/types'
 import { UnconfiguredView } from './components/UnconfiguredView'
 import { ThemeProvider, useTheme } from './theme'
 
@@ -38,6 +40,7 @@ function AppShell() {
   const [initialSaveTitle, setInitialSaveTitle] = useState('')
   const [saveTabUrl, setSaveTabUrl] = useState('')
   const [syncSteps, setSyncSteps] = useState<string[] | null>(null)
+  const [pushPreview, setPushPreview] = useState<Bookmark[] | null>(null)
   const { config, loading, syncStatus, setSyncStatus, isConfigured } = useConfig()
   const {
     currentFolder,
@@ -51,7 +54,7 @@ function AppShell() {
     openBookmark,
   } = useBookmarkNavigation()
   const { stats, refreshStats } = useBookmarkStats()
-  const { pushLoading, pullLoading, handlePush, handlePull, handleSaveCurrent, getCurrentTabInfo } = useSync()
+  const { pushLoading, pullLoading, getPushPreview, executePush, handlePull, handleSaveCurrent, getCurrentTabInfo } = useSync()
   const {
     pullDiffs,
     selectedIds,
@@ -100,7 +103,21 @@ function AppShell() {
   }, [triggerSaveBookmark])
 
   // ---- 同步操作包装 ----
-  const onPush = () => handlePush(setSyncStatus, setSyncSteps)
+  const onPush = async () => {
+    setSyncSteps(null)
+    const bookmarks = await getPushPreview()
+    setPushPreview(bookmarks)
+  }
+
+  const onCancelPush = useCallback(() => {
+    setPushPreview(null)
+    setSyncStatus('已取消推送')
+  }, [setSyncStatus])
+
+  const onConfirmPush = useCallback(() => {
+    setPushPreview(null)
+    executePush(setSyncStatus, setSyncSteps)
+  }, [executePush, setSyncStatus])
 
   const onPull = async () => {
     const res = await handlePull(setSyncStatus, setSyncSteps)
@@ -243,6 +260,14 @@ function AppShell() {
           initialTitle={initialSaveTitle}
           onSave={onSaveToFolder}
           onCancel={() => setShowFolderPicker(false)}
+        />
+      )}
+
+      {pushPreview && (
+        <PushConfirmModal
+          bookmarks={pushPreview}
+          onCancel={onCancelPush}
+          onConfirm={onConfirmPush}
         />
       )}
     </div>
