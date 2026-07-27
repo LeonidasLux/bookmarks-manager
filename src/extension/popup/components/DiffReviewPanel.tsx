@@ -9,6 +9,7 @@ interface DiffReviewPanelProps {
   emptyFolders: string[]
   diffTab: DiffTab
   cleanEnabled: boolean
+  applying: boolean
   onTabChange: (tab: DiffTab) => void
   onToggleId: (id: string) => void
   onSelectAllInGroup: (diffs: BookmarkDiff[]) => void
@@ -23,6 +24,7 @@ export function DiffReviewPanel({
   emptyFolders,
   diffTab,
   cleanEnabled,
+  applying,
   onTabChange,
   onToggleId,
   onSelectAllInGroup,
@@ -197,10 +199,10 @@ export function DiffReviewPanel({
         </button>
         <button
           onClick={onApply}
-          disabled={selectedCount === 0}
-          style={selectedCount === 0 ? styles.btnPrimaryDisabled : styles.btnPrimary}
+          disabled={selectedCount === 0 || applying}
+          style={(selectedCount === 0 || applying) ? styles.btnPrimaryDisabled : styles.btnPrimary}
         >
-          ✓ 应用 ({selectedCount})
+          {applying ? '⋯ 应用中...' : `✓ 应用 (${selectedCount})`}
         </button>
       </div>
     </div>

@@ -11,6 +11,7 @@ export function useDiffReview() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [emptyFolders, setEmptyFolders] = useState<string[]>([])
   const [diffTab, setDiffTab] = useState<DiffTab>('added')
+  const [applying, setApplying] = useState(false)
 
   // pullDiffs 变化时重置为第一个有内容的 tab
   useEffect(() => {
@@ -48,6 +49,7 @@ export function useDiffReview() {
     setSyncSteps?: (steps: string[]) => void,
     refreshStats?: () => void,
   ) => {
+    setApplying(true)
     const selectedDiffs = pullDiffs!.filter(d => selectedIds.includes(d.remote.id))
     chrome.runtime.sendMessage({
       type: 'APPLY_PULL_DIFFS',
@@ -65,6 +67,7 @@ export function useDiffReview() {
       setPullDiffs(null)
       setSelectedIds([])
       setEmptyFolders([])
+      setApplying(false)
     })
   }, [pullDiffs, selectedIds])
 
@@ -103,6 +106,7 @@ export function useDiffReview() {
     selectedIds,
     emptyFolders,
     diffTab,
+    applying,
     setDiffTab,
     openReview,
     cancelPullReview,

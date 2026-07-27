@@ -57,6 +57,7 @@ function AppShell() {
     selectedIds,
     emptyFolders,
     diffTab,
+    applying,
     setDiffTab,
     openReview,
     cancelPullReview,
@@ -164,6 +165,7 @@ function AppShell() {
         selectedIds={selectedIds}
         emptyFolders={emptyFolders}
         diffTab={diffTab}
+        applying={applying}
         cleanEnabled={config?.cleanEmptyFolders ?? true}
         onTabChange={setDiffTab}
         onToggleId={toggleId}

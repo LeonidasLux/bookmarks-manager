@@ -30,6 +30,7 @@ describe('DiffReviewPanel', () => {
     emptyFolders: [] as string[],
     diffTab: 'added' as const,
     cleanEnabled: true,
+    applying: false,
     onTabChange: vi.fn(),
     onToggleId: vi.fn(),
     onSelectAllInGroup: vi.fn(),
