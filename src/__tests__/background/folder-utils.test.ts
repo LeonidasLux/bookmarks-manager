@@ -48,6 +48,63 @@ describe('removeEmptyAncestorFolders', () => {
 
     expect(mockBookmarks.remove).not.toHaveBeenCalled()
   })
+
+  it('已在上级清理中被删除的文件夹不应再抛出异常', async () => {
+    // 模拟场景：affectedParents 中同时包含子文件夹 '100' 和父文件夹 '10' 的 ID
+    // 第一次调用 removeEmptyAncestorFolders('100') 时级联删除了父文件夹 '10',
+    // 第二次调用 removeEmptyAncestorFolders('10') 时文件夹已不存在
+
+    // --- 第一次调用：清理 '100'，级联删除父级 '10' ---
+    mockBookmarks.getChildren.mockResolvedValueOnce([]) // '100' 的子节点（空）
+    mockBookmarks.get.mockResolvedValueOnce([{ id: '100', title: '空子文件夹', parentId: '10' }])
+    mockBookmarks.getChildren.mockResolvedValueOnce([]) // '10' 的子节点（空，唯一子文件夹 '100' 刚被删）
+    mockBookmarks.get.mockResolvedValueOnce([{ id: '10', title: '空父文件夹', parentId: '1' }])
+    // '1' 是书签栏根级，while 循环停止
+
+    const steps: string[] = []
+    await removeEmptyAncestorFolders('100', steps)
+
+    expect(mockBookmarks.remove).toHaveBeenCalledWith('100')
+    expect(mockBookmarks.remove).toHaveBeenCalledWith('10')
+    expect(steps).toContain('- folder: 空子文件夹')
+    expect(steps).toContain('- folder: 空父文件夹')
+
+    // --- 第二次调用：'10' 已被删除，getChildren 抛出 Chrome API 错误 ---
+    mockBookmarks.getChildren.mockRejectedValueOnce(
+      new Error("Can't find bookmark for id."),
+    )
+
+    const steps2: string[] = []
+    await expect(removeEmptyAncestorFolders('10', steps2)).resolves.toBeUndefined()
+    expect(steps2).toEqual([])
+  })
+
+  it('应级联删除多级空父文件夹', async () => {
+    // 路径: /书签栏/Level2/Level1 → 传入 Level1，逐级向上删除
+    mockBookmarks.getChildren.mockResolvedValueOnce([]) // Level1 为空
+    mockBookmarks.get.mockResolvedValueOnce([{ id: '100', title: 'Level1', parentId: '10' }])
+    mockBookmarks.getChildren.mockResolvedValueOnce([]) // Level2 为空（Level1 刚被删）
+    mockBookmarks.get.mockResolvedValueOnce([{ id: '10', title: 'Level2', parentId: '1' }])
+    // '1' 是根，停止
+
+    const steps: string[] = []
+    await removeEmptyAncestorFolders('100', steps)
+
+    expect(mockBookmarks.remove).toHaveBeenCalledWith('100')
+    expect(mockBookmarks.remove).toHaveBeenCalledWith('10')
+    expect(steps).toHaveLength(2)
+    expect(steps[0]).toBe('- folder: Level1')
+    expect(steps[1]).toBe('- folder: Level2')
+  })
+
+  it('getChildren 抛出异常时应优雅退出', async () => {
+    mockBookmarks.getChildren.mockRejectedValueOnce(new Error('Can\'t find bookmark for id.'))
+
+    const steps: string[] = []
+    await expect(removeEmptyAncestorFolders('999', steps)).resolves.toBeUndefined()
+    expect(mockBookmarks.remove).not.toHaveBeenCalled()
+    expect(steps).toEqual([])
+  })
 })
 
 describe('computeEmptyFolders', () => {

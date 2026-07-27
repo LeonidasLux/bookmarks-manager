@@ -6,9 +6,9 @@ const ROOT_FOLDER_IDS = new Set(['0', '1', '2', '3'])
 export async function removeEmptyAncestorFolders(parentId: string, steps: string[]): Promise<void> {
   let currentId = parentId
   while (currentId && !ROOT_FOLDER_IDS.has(currentId)) {
-    const children = await chrome.bookmarks.getChildren(currentId)
-    if (children.length > 0) return
     try {
+      const children = await chrome.bookmarks.getChildren(currentId)
+      if (children.length > 0) return
       const [node] = await chrome.bookmarks.get(currentId)
       const grandParent = node?.parentId
       await chrome.bookmarks.remove(currentId)
