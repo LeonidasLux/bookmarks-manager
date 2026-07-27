@@ -21,7 +21,10 @@ export async function getBrowserBookmarks(steps: string[]): Promise<Bookmark[]> 
         })
       }
       if (node.children) {
-        walk(node.children, `${folderPath}/${node.title}`)
+        // 根级文件夹 (id 1/2/3) 在不同浏览器中名称不同
+        // Chrome: 书签栏, Edge: 收藏夹栏 → 统一为规范名保证 bookmarks.json 路径跨浏览器一致
+        const folderName = ROOT_FOLDER_CANONICAL[node.id] ?? node.title
+        walk(node.children, `${folderPath}/${folderName}`)
       }
     }
   }
@@ -36,16 +39,19 @@ export async function getBrowserBookmarks(steps: string[]): Promise<Bookmark[]> 
  * - '1' = 书签栏 / Bookmarks bar
  * - '2' = 其他书签 / Other bookmarks
  * - '3' = 移动设备书签 / Mobile bookmarks
+ *
+ * 不同浏览器根文件夹名称不同（Chrome: 书签栏, Edge: 收藏夹栏），
+ * 用此映射统一为 Chrome 中文名，保证 bookmarks.json 路径跨浏览器一致。
  */
-const ROOT_FOLDER_MAP: Record<string, string> = {
+const ROOT_FOLDER_CANONICAL: Record<string, string> = {
   '1': '书签栏',
   '2': '其他书签',
   '3': '移动设备书签',
 }
 
-/** 反转 ROOT_FOLDER_MAP：名称 → ID */
+/** 名称 → ID 反向查找 */
 const ROOT_NAME_TO_ID: Record<string, string> = {}
-for (const [id, name] of Object.entries(ROOT_FOLDER_MAP)) {
+for (const [id, name] of Object.entries(ROOT_FOLDER_CANONICAL)) {
   ROOT_NAME_TO_ID[name] = id
 }
 

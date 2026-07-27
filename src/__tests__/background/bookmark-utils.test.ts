@@ -93,6 +93,60 @@ describe('getBrowserBookmarks', () => {
     expect(result[0].folder).toBe('/书签栏/Work')
   })
 
+  it('Edge 的"收藏夹栏"应规范化为"书签栏"', async () => {
+    mockBookmarks.getTree.mockResolvedValue([
+      {
+        id: '0',
+        title: '',
+        children: [
+          {
+            id: '1',
+            title: '收藏夹栏',
+            children: [
+              {
+                id: '10',
+                title: 'Google',
+                url: 'https://google.com',
+                dateAdded: 1700000000000,
+              },
+              {
+                id: '11',
+                title: 'Dev',
+                children: [
+                  {
+                    id: '110',
+                    title: 'GitHub',
+                    url: 'https://github.com',
+                    dateAdded: 1700000000000,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            id: '2',
+            title: '其他收藏夹',
+            children: [
+              {
+                id: '20',
+                title: 'Later',
+                url: 'https://later.com',
+                dateAdded: 1700000000000,
+              },
+            ],
+          },
+        ],
+      },
+    ])
+
+    const result = await getBrowserBookmarks([])
+
+    expect(result).toHaveLength(3)
+    expect(result[0].folder).toBe('/书签栏')
+    expect(result[1].folder).toBe('/书签栏/Dev')
+    expect(result[2].folder).toBe('/其他书签')
+  })
+
   it('空书签树应返回空列表', async () => {
     mockBookmarks.getTree.mockResolvedValue([])
 
