@@ -98,7 +98,9 @@ export class SyncEngine {
    */
   async pushOnly(localBookmarks: Bookmark[], steps: string[]): Promise<void> {
     const sha = await this.getRemoteSha(steps)
-    const content = encodeGitHubContent(JSON.stringify(localBookmarks, null, 2))
+    const jsonStr = JSON.stringify(localBookmarks, null, 2)
+    console.log('[sync] 推送到 GitHub 的原始 JSON:', jsonStr)
+    const content = encodeGitHubContent(jsonStr)
 
     const body: Record<string, string> = {
       message: `sync bookmarks: ${localBookmarks.length} items`,

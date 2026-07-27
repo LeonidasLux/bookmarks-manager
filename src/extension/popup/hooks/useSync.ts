@@ -1,5 +1,38 @@
 import { useState, useCallback } from 'react'
-import type { SyncResult, PullDiffResult } from '../../../shared/types'
+import type { Bookmark, SyncResult, PullDiffResult } from '../../../shared/types'
+import { normalizeFolderPath } from '../../../shared/sync'
+
+/** 将浏览器书签树展平为扁平 Bookmark 数组（用于推送前预览） */
+function flattenBookmarksTree(tree: chrome.bookmarks.BookmarkTreeNode[]): Bookmark[] {
+  const flat: Bookmark[] = []
+  const ROOT_FOLDER_CANONICAL: Record<string, string> = {
+    '1': '书签栏',
+    '2': '其他书签',
+    '3': '移动设备书签',
+  }
+  function walk(nodes: chrome.bookmarks.BookmarkTreeNode[], folderPath: string) {
+    for (const node of nodes) {
+      if (node.url) {
+        flat.push({
+          id: node.id,
+          title: node.title,
+          url: node.url,
+          folder: normalizeFolderPath(folderPath || '/'),
+          tags: [],
+          createdAt: new Date(node.dateAdded ?? Date.now()).toISOString(),
+          updatedAt: new Date(node.dateAdded ?? Date.now()).toISOString(),
+          source: 'browser',
+        })
+      }
+      if (node.children) {
+        const folderName = ROOT_FOLDER_CANONICAL[node.id] ?? node.title
+        walk(node.children, `${folderPath}/${folderName}`)
+      }
+    }
+  }
+  walk(tree, '')
+  return flat
+}
 
 /**
  * 同步操作：推送、拉取、保存当前页面
@@ -12,17 +45,29 @@ export function useSync() {
     setSyncStatus: (s: string | null) => void,
     setSyncSteps?: (steps: string[]) => void,
   ) => {
-    setPushLoading(true)
-    setSyncStatus('🔄 推送到 GitHub...')
-    chrome.runtime.sendMessage({ type: 'PUSH_TO_GITHUB' }, (res: SyncResult) => {
-      setPushLoading(false)
-      setSyncSteps?.(res.steps ?? [])
-      if (res.success) {
-        setSyncStatus(`✅ 推送成功 — ${new Date(res.timestamp).toLocaleString('zh-CN')}`)
-      } else {
-        setSyncStatus(`❌ 推送失败: ${res.error}`)
+    ;(async () => {
+      // 收集书签数据用于二次确认和打印
+      const tree = await chrome.bookmarks.getTree()
+      const bookmarks = flattenBookmarksTree(tree)
+      console.log('推送到 GitHub 的书签数据:', JSON.stringify(bookmarks, null, 2))
+
+      if (!confirm(`确认将 ${bookmarks.length} 条书签推送到 GitHub？\n该操作将强制覆盖远程数据。`)) {
+        setSyncStatus('已取消推送')
+        return
       }
-    })
+
+      setPushLoading(true)
+      setSyncStatus('🔄 推送到 GitHub...')
+      chrome.runtime.sendMessage({ type: 'PUSH_TO_GITHUB' }, (res: SyncResult) => {
+        setPushLoading(false)
+        setSyncSteps?.(res.steps ?? [])
+        if (res.success) {
+          setSyncStatus(`✅ 推送成功 — ${new Date(res.timestamp).toLocaleString('zh-CN')}`)
+        } else {
+          setSyncStatus(`❌ 推送失败: ${res.error}`)
+        }
+      })
+    })()
   }, [])
 
   /** 返回拉取结果，由调用方决定如何处理差异 */

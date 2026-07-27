@@ -1,12 +1,16 @@
-import type { AppConfig, BookmarkDiff } from '../../shared/types'
+import type { AppConfig, Bookmark, BookmarkDiff } from '../../shared/types'
 import { DEFAULT_CONFIG } from '../../shared/types'
 import { SyncEngine } from '../../shared/sync'
 import { getBrowserBookmarks } from './bookmark-utils'
 import { computeEmptyFolders } from './folder-utils'
-import { applyDiffsToBrowser, showResult } from './diff-applier'
+import { applyDiffsToBrowser, reorderBookmarks, showResult } from './diff-applier'
+
+const REMOTE_BOOKMARKS_KEY = 'lastRemoteBookmarks'
 
 let config: AppConfig = DEFAULT_CONFIG
 let syncEngine: SyncEngine | null = null
+/** 上次 PULL 获取的远程书签数组，用于后续 APPLY 时重排顺序 */
+let lastRemoteBookmarks: Bookmark[] = []
 
 function loadConfig(): Promise<AppConfig> {
   return new Promise((resolve) => {
@@ -89,6 +93,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           if (!syncEngine) syncEngine = new SyncEngine(config)
 
           const remote = await syncEngine.pullOnly(steps)
+          lastRemoteBookmarks = remote
+          // 持久化到 storage，避免 SW 回收后 APPLY 时丢失
+          chrome.storage.local.set({ [REMOTE_BOOKMARKS_KEY]: remote })
           const local = await getBrowserBookmarks(steps)
           const diffs = SyncEngine.computeDiff(remote, local)
           steps.push(`差异: 新增${diffs.filter(d => d.type === 'added').length} / 删除${diffs.filter(d => d.type === 'deleted').length} / 修改${diffs.filter(d => d.type === 'modified').length}`)
@@ -113,6 +120,22 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           const selectedDiffs = msg.selectedDiffs as BookmarkDiff[]
           const cleanEmptyFolders = msg.cleanEmptyFolders as boolean
           await applyDiffsToBrowser(selectedDiffs, steps, cleanEmptyFolders)
+
+          // 按远程书签顺序重排
+          // 先从 storage 恢复（SW 可能被回收导致内存数据丢失）
+          if (lastRemoteBookmarks.length === 0) {
+            const stored = await chrome.storage.local.get(REMOTE_BOOKMARKS_KEY)
+            lastRemoteBookmarks = (stored[REMOTE_BOOKMARKS_KEY] ?? []) as Bookmark[]
+          }
+          if (lastRemoteBookmarks.length > 0) {
+            await reorderBookmarks(lastRemoteBookmarks, steps)
+          } else {
+            steps.push('跳过重排：无远程书签数据')
+          }
+
+          // 清理 storage 中的远程数据
+          chrome.storage.local.remove(REMOTE_BOOKMARKS_KEY)
+
           steps.push(`完成: 应用 ${selectedDiffs.length} 项`)
           showResult(steps, true)
           const timestamp = new Date().toISOString()
