@@ -14,33 +14,24 @@ description: >
 
 ### 1. 运行前检查
 - 执行 `git status` 检查工作区状态
-- 如果有未提交更改，展示给用户并询问是否全部提交（`git add -A` 后再继续）
-- 如果工作区干净但有未推送 commit，询问是否一起推送
+- 确定 `git暂存区` 是否有变更代码，如果没有则询问用户是否需要提交 `更改区` 的代码
 - 确认当前分支是 `main`
 
 ### 2. 获取 commit message
-- 提示用户输入 commit message（支持多行）
-- 使用临时文件方式保存多行消息：`mktemp` 创建临时文件，让用户通过 `cat > tmpfile` 或 `echo` 写入内容
-- 如果用户提供单行消息，直接用 `-m` 参数
-- 读取完成后删除临时文件
+- 根据暂存区代码diff自动生成commit message
 
-### 3. 确定版本升级类型
-- 询问用户：**patch**（修复，0.0.x）、**minor**（小功能，0.x.0）还是 **major**（大版本，x.0.0）
-- 给出当前版本的参考
-
-### 4. 读取并升级版本号
+### 3. 读取版本号
 
 **读取当前版本：**
 - 从 `package.json` 的 `version` 字段读取
 - 从 `vite.config.ts` 中 `crx({ manifest: { version: '...' } })` 读取
-- 两者应保持一致，不一致时报错提示
 
 **计算新版本：**
 - patch: `1.2.3` → `1.2.4`
 - minor: `1.2.3` → `1.3.0`
 - major: `1.2.3` → `2.0.0`
 
-### 5. 更新版本号文件
+### 4. 更新版本号文件
 
 **更新 `package.json`：**
 - 用 Edit 工具替换 `"version": "旧版本"` 为 `"version": "新版本"`
@@ -49,10 +40,8 @@ description: >
 - 用 Edit 工具替换 `version: '旧版本'` 为 `version: '新版本'`
 - 注意保持引号格式一致
 
-### 6. 执行提交
-- `git add -A`
+### 5. 执行提交
 - `git commit -m "提交消息"`
-- 使用 `-m` 参数提交（单行消息）或 `--file` （多行消息）
 
 ### 7. 打标签
 - `git tag v<新版本号>`
@@ -65,21 +54,6 @@ description: >
 ### 9. 确认 GitHub Actions 已触发
 - 告知用户 Release workflow 已自动触发
 - 可在 https://github.com/0668001277/bookmarks-manager/actions 查看进度
-
-## 安全确认
-
-⚠️ 每个敏感步骤前都要向用户确认：
-- 提交前：展示 `git status` 和将要提交的文件概览
-- 推送到 GitHub 前：展示 tag 名和推送目标
-- 使用以下确认格式：
-  ```
-  ⚠️ 即将执行推送操作
-  - 分支: main
-  - 标签: v0.2.0
-  - 提交信息: xxxxx
-  
-  确认继续？(是/否)
-  ```
 
 ## 错误处理
 
