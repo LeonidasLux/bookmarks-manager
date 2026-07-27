@@ -234,42 +234,6 @@ function App() {
       </div>
 
       <div style={{ marginBottom: '1rem' }}>
-        <label style={{ display: 'block', marginBottom: '0.375rem', fontSize: '12px', fontWeight: 500, color: colors.textMuted }}>
-          <span style={{ color: colors.accent }}>$</span> SYNC_INTERVAL_HOURS
-        </label>
-        <input
-          type="number"
-          value={config?.syncIntervalHours ?? 6}
-          onChange={(e) => updateField('syncIntervalHours', Number(e.target.value))}
-          onFocus={() => setFocusField('interval')}
-          onBlur={() => setFocusField(null)}
-          min={1}
-          max={168}
-          style={{
-            ...inputBase,
-            width: 'auto',
-            minWidth: 100,
-            ...(focusField === 'interval' ? themedFocus : {}),
-          }}
-        />
-      </div>
-
-      <div style={{ marginBottom: '1rem' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '13px' }}>
-          <input
-            type="checkbox"
-            checked={config?.autoSyncOnLoad ?? false}
-            onChange={(e) => updateField('autoSyncOnLoad', e.target.checked)}
-            style={{ accentColor: colors.accent }}
-          />
-          <span style={{ fontWeight: 500 }}>扩展加载时自动同步书签到 GitHub</span>
-        </label>
-        <p style={{ fontSize: '11px', color: colors.textDim, margin: '0.25rem 0 0 1.5rem', fontFamily: font }}>
-          # 启用后，浏览器启动或扩展更新时自动执行一次同步
-        </p>
-      </div>
-
-      <div style={{ marginBottom: '1rem' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '13px' }}>
           <input
             type="checkbox"

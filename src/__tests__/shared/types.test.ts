@@ -6,8 +6,6 @@ describe('DEFAULT_CONFIG', () => {
     expect(DEFAULT_CONFIG.githubToken).toBe('')
     expect(DEFAULT_CONFIG.repoOwner).toBe('')
     expect(DEFAULT_CONFIG.repoName).toBe('my-bookmarks')
-    expect(DEFAULT_CONFIG.syncIntervalHours).toBe(6)
-    expect(DEFAULT_CONFIG.autoSyncOnLoad).toBe(false)
     expect(DEFAULT_CONFIG.cleanEmptyFolders).toBe(true)
   })
 })

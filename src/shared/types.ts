@@ -16,9 +16,6 @@ export interface AppConfig {
   githubToken: string
   repoOwner: string
   repoName: string
-  syncIntervalHours: number
-  /** 扩展加载时是否自动同步书签到 GitHub */
-  autoSyncOnLoad: boolean
   /** 应用差异后是否清理空文件夹 */
   cleanEmptyFolders: boolean
   /** 主题：'dark' | 'light' | 'system'（跟随系统） */
@@ -63,8 +60,6 @@ export const DEFAULT_CONFIG: AppConfig = {
   githubToken: '',
   repoOwner: '',
   repoName: 'my-bookmarks',
-  syncIntervalHours: 6,
-  autoSyncOnLoad: false,
   cleanEmptyFolders: true,
   theme: 'system',
 }
