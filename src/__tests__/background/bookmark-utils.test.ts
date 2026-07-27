@@ -8,8 +8,13 @@ const mockBookmarks = {
   create: vi.fn(),
 }
 
+const mockHistory = {
+  search: vi.fn(),
+}
+
 vi.stubGlobal('chrome', {
   bookmarks: mockBookmarks,
+  history: mockHistory,
 })
 
 import { getBrowserBookmarks } from '../../extension/background/bookmark-utils'
@@ -17,6 +22,7 @@ import { getBrowserBookmarks } from '../../extension/background/bookmark-utils'
 describe('getBrowserBookmarks', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockHistory.search.mockResolvedValue([])
   })
 
   it('应展平书签树为扁平列表', async () => {

@@ -253,10 +253,10 @@ export function createStyles(colors: ColorScheme) {
     bookmarkMeta: {
       fontSize: '10px',
       color: colors.textDim,
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      whiteSpace: 'nowrap' as const,
       marginTop: '1px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
     },
 
     sectionLabel: {

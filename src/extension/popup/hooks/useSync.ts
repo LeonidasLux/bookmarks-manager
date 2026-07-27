@@ -3,7 +3,7 @@ import type { Bookmark, SyncResult, PullDiffResult } from '../../../shared/types
 import { normalizeFolderPath } from '../../../shared/sync'
 
 /** 将浏览器书签树展平为扁平 Bookmark 数组（用于推送前预览） */
-function flattenBookmarksTree(tree: chrome.bookmarks.BookmarkTreeNode[]): Bookmark[] {
+async function flattenBookmarksTree(tree: chrome.bookmarks.BookmarkTreeNode[]): Promise<Bookmark[]> {
   const flat: Bookmark[] = []
   const ROOT_FOLDER_CANONICAL: Record<string, string> = {
     '1': '书签栏',
@@ -31,6 +31,23 @@ function flattenBookmarksTree(tree: chrome.bookmarks.BookmarkTreeNode[]): Bookma
     }
   }
   walk(tree, '')
+
+  // 批量获取访问次数
+  try {
+    const historyItems = await chrome.history.search({ text: '', maxResults: 10000, startTime: 0 })
+    const visitMap = new Map<string, number>()
+    for (const item of historyItems) {
+      if (item.url && item.visitCount != null) {
+        visitMap.set(item.url, item.visitCount)
+      }
+    }
+    for (const bm of flat) {
+      bm.visitCount = visitMap.get(bm.url) ?? 0
+    }
+  } catch {
+    // chrome.history 不可用时静默跳过
+  }
+
   return flat
 }
 
@@ -48,7 +65,7 @@ export function useSync() {
     ;(async () => {
       // 收集书签数据用于二次确认和打印
       const tree = await chrome.bookmarks.getTree()
-      const bookmarks = flattenBookmarksTree(tree)
+      const bookmarks = await flattenBookmarksTree(tree)
       console.log('推送到 GitHub 的书签数据:', JSON.stringify(bookmarks, null, 2))
 
       if (!confirm(`确认将 ${bookmarks.length} 条书签推送到 GitHub？\n该操作将强制覆盖远程数据。`)) {

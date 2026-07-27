@@ -9,9 +9,9 @@ export default defineConfig({
       manifest: {
         manifest_version: 3,
         name: 'Bookmarks Manager',
-        version: '1.1.0',
+        version: '1.1.1',
         description: 'Browser bookmark manager with GitHub sync',
-        permissions: ['storage', 'bookmarks', 'activeTab', 'favicon'],
+        permissions: ['storage', 'bookmarks', 'activeTab', 'favicon', 'history'],
         host_permissions: ['https://api.github.com/*'],
         action: {
           default_popup: 'src/extension/popup/index.html',

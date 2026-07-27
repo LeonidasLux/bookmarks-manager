@@ -30,8 +30,32 @@ export async function getBrowserBookmarks(steps: string[]): Promise<Bookmark[]> 
   }
 
   walk(tree, '')
+
+  // 批量获取访问次数
+  await enrichVisitCounts(flat, steps)
+
   steps.push(`浏览器: ${flat.length} 条书签`)
   return flat
+}
+
+/** 从 chrome.history 批量获取书签访问次数 */
+async function enrichVisitCounts(bookmarks: Bookmark[], steps: string[]): Promise<void> {
+  try {
+    const historyItems = await chrome.history.search({ text: '', maxResults: 10000, startTime: 0 })
+    const visitMap = new Map<string, number>()
+    for (const item of historyItems) {
+      if (item.url && item.visitCount != null) {
+        visitMap.set(item.url, item.visitCount)
+      }
+    }
+    for (const bm of bookmarks) {
+      bm.visitCount = visitMap.get(bm.url) ?? 0
+    }
+    steps.push(`历史记录: ${visitMap.size} 条，已附加访问次数`)
+  } catch {
+    // chrome.history 不可用时静默失败
+    steps.push('历史记录: 不可用，跳过访问次数')
+  }
 }
 
 /**

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { isFolderNode } from '../hooks/useBookmarkNavigation'
+import { useBookmarkVisitCounts } from '../hooks/useBookmarkVisitCounts'
 import { useTheme } from '../theme'
 import { OTHER_BOOKMARKS_ID, MOBILE_BOOKMARKS_ID, ROOT_FOLDER_META } from '../constants'
 
@@ -34,7 +35,7 @@ function FolderTag({ title, onClick }: { title: string; onClick: () => void }) {
   )
 }
 
-function BookmarkRow({ title, url, onClick }: { title: string; url: string; onClick: () => void }) {
+function BookmarkRow({ title, url, visitCount, onClick }: { title: string; url: string; visitCount?: number; onClick: () => void }) {
   const { styles, colors } = useTheme()
   const [hover, setHover] = useState(false)
   const [imgFailed, setImgFailed] = useState(false)
@@ -70,7 +71,16 @@ function BookmarkRow({ title, url, onClick }: { title: string; url: string; onCl
       )}
       <div style={styles.bookmarkContent}>
         <span style={styles.bookmarkTitle}>{title || '无标题'}</span>
-        <span style={styles.bookmarkMeta}>{url}</span>
+        <span style={styles.bookmarkMeta}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+            {url}
+          </span>
+          {visitCount !== undefined && (
+            <span style={{ flexShrink: 0, color: colors.textDim, fontSize: 10 }}>
+              👁 {visitCount}
+            </span>
+          )}
+        </span>
       </div>
     </div>
   )
@@ -80,6 +90,8 @@ export function BookmarkList({ currentItems, isHomeView, onEnterFolder, onOpenBo
   const { styles, colors } = useTheme()
   const folders = currentItems.filter(n => isFolderNode(n))
   const bookmarks = currentItems.filter(n => !isFolderNode(n))
+  const bookmarkUrls = bookmarks.map(b => b.url!).filter(Boolean)
+  const visitCounts = useBookmarkVisitCounts(bookmarkUrls)
 
   if (currentItems.length === 0) {
     return <div style={styles.empty}>∅ 暂无书签和文件夹</div>
@@ -115,6 +127,7 @@ export function BookmarkList({ currentItems, isHomeView, onEnterFolder, onOpenBo
                 key={b.id}
                 title={b.title}
                 url={b.url!}
+                visitCount={visitCounts[b.url!]}
                 onClick={() => onOpenBookmark(b.url!)}
               />
             ))}
