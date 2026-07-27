@@ -60,7 +60,7 @@ export interface PullDiffResult {
 export const DEFAULT_CONFIG: AppConfig = {
   githubToken: '',
   repoOwner: '',
-  repoName: '',
+  repoName: 'my-bookmarks',
   syncIntervalHours: 6,
   autoSyncOnLoad: false,
   cleanEmptyFolders: true,

@@ -133,7 +133,7 @@ function App() {
       {/* GitHub Token */}
       <div style={{ marginBottom: '1rem' }}>
         <label style={{ display: 'block', marginBottom: '0.375rem', fontSize: '12px', fontWeight: 500, color: colors.textMuted }}>
-          <span style={{ color: colors.accent }}>$</span> GITHUB_TOKEN
+          <span style={{ color: colors.accent }}>$</span> GITHUB_TOKEN <span style={{ color: colors.orange }}>*</span>
         </label>
         <div style={{ position: 'relative' }}>
           <input
@@ -186,7 +186,7 @@ function App() {
 
       <div style={{ marginBottom: '1rem' }}>
         <label style={{ display: 'block', marginBottom: '0.375rem', fontSize: '12px', fontWeight: 500, color: colors.textMuted }}>
-          <span style={{ color: colors.accent }}>$</span> REPO_OWNER
+          <span style={{ color: colors.accent }}>$</span> REPO_OWNER <span style={{ color: colors.orange }}>*</span>
         </label>
         <input
           type="text"
@@ -204,7 +204,7 @@ function App() {
 
       <div style={{ marginBottom: '1rem' }}>
         <label style={{ display: 'block', marginBottom: '0.375rem', fontSize: '12px', fontWeight: 500, color: colors.textMuted }}>
-          <span style={{ color: colors.accent }}>$</span> REPO_NAME
+          <span style={{ color: colors.accent }}>$</span> REPO_NAME <span style={{ color: colors.textDim }}>(可选，默认 my-bookmarks)</span>
         </label>
         <input
           type="text"
@@ -218,6 +218,19 @@ function App() {
           }}
           placeholder="my-bookmarks"
         />
+        {config?.repoOwner && (
+          <p style={{ fontSize: '11px', color: colors.textDim, margin: '0.375rem 0 0 0', fontFamily: font }}>
+            # 仓库地址：
+            <a
+              href={`https://github.com/${config.repoOwner}/${config.repoName || 'my-bookmarks'}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: colors.accent, textDecoration: 'none', marginLeft: '0.25rem' }}
+            >
+              https://github.com/{config.repoOwner}/{config.repoName || 'my-bookmarks'}
+            </a>
+          </p>
+        )}
       </div>
 
       <div style={{ marginBottom: '1rem' }}>
