@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install
+
+      - run: pnpm build
+
+      - name: Package extension
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME}"
+          PACKAGE_NAME="bookmarks-manager-${TAG_NAME}"
+          cd dist
+          zip -r "../${PACKAGE_NAME}.zip" .
+          cd ..
+          echo "PACKAGE_NAME=${PACKAGE_NAME}" >> $GITHUB_ENV
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Bookmarks Manager ${{ github.ref_name }}
+          body: |
+            See [commits](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for changes.
+          draft: false
+          files: |
+            bookmarks-manager-${{ github.ref_name }}.zip
