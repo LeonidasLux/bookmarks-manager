@@ -194,6 +194,16 @@ function AppShell() {
     )
   }
 
+  if (showFolderPicker) {
+    return (
+      <FolderPicker
+        initialTitle={initialSaveTitle}
+        onSave={onSaveToFolder}
+        onBack={() => setShowFolderPicker(false)}
+      />
+    )
+  }
+
   if (loading) {
     return <LoadingView />
   }
@@ -253,14 +263,6 @@ function AppShell() {
             ))}
           </div>
         </div>
-      )}
-
-      {showFolderPicker && (
-        <FolderPicker
-          initialTitle={initialSaveTitle}
-          onSave={onSaveToFolder}
-          onCancel={() => setShowFolderPicker(false)}
-        />
       )}
 
       {pushPreview && (

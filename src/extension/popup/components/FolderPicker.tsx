@@ -5,11 +5,11 @@ import { useTheme } from '../theme'
 interface FolderPickerProps {
   initialTitle: string
   onSave: (folderId: string, title: string) => void
-  onCancel: () => void
+  onBack: () => void
 }
 
-export function FolderPicker({ initialTitle, onSave, onCancel }: FolderPickerProps) {
-  const { styles, colors } = useTheme()
+export function FolderPicker({ initialTitle, onSave, onBack }: FolderPickerProps) {
+  const { styles, colors, fonts } = useTheme()
   const {
     filteredFolders,
     loading,
@@ -44,109 +44,246 @@ export function FolderPicker({ initialTitle, onSave, onCancel }: FolderPickerPro
     if (e.key === 'Enter' && selectedFolderId && title.trim()) {
       handleSave()
     } else if (e.key === 'Escape') {
-      onCancel()
+      onBack()
     }
-  }, [selectedFolderId, title, handleSave, onCancel])
+  }, [selectedFolderId, title, handleSave, onBack])
 
   return (
-    <div style={styles.overlay} onClick={onCancel} onKeyDown={handleKeyDown}>
-      <div style={styles.modalContainer} onClick={e => e.stopPropagation()}>
-        {/* 标题 */}
-        <div style={styles.modalHeader}>
+    <div style={{
+      width: 420,
+      padding: '12px',
+      fontFamily: fonts.ui,
+      background: colors.bg,
+      color: colors.text,
+      fontSize: '12px',
+      lineHeight: 1.6,
+    }} onKeyDown={handleKeyDown}>
+      {/* 顶部导航栏 */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: '12px',
+        paddingBottom: '8px',
+        borderBottom: `1px solid ${colors.borderLight}`,
+      }}>
+        <button
+          onClick={onBack}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '4px 10px',
+            border: `1px solid transparent`,
+            borderRadius: '6px',
+            background: 'transparent',
+            cursor: 'pointer',
+            fontSize: '12px',
+            color: colors.textMuted,
+            fontFamily: fonts.mono,
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = colors.surface
+            e.currentTarget.style.borderColor = colors.border
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.borderColor = 'transparent'
+          }}
+        >
+          ← 返回
+        </button>
+        <span style={{ fontWeight: 600, fontSize: '12px', color: colors.text }}>
           <span style={{ color: colors.accent }}>$</span> 保存书签
-        </div>
+        </span>
+      </div>
 
-        {/* 书签标题编辑 */}
-        <div style={styles.modalFieldLabel}>
-          书签标题
-        </div>
-        <input
-          ref={titleInputRef}
-          type="text"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          onFocus={() => setTitleFocus(true)}
-          onBlur={() => setTitleFocus(false)}
-          style={{
-            ...styles.modalInput,
-            ...(titleFocus ? inputFocusBorder : inputBorderStyle),
-          }}
-          onKeyDown={e => {
-            if (e.key === 'Enter') {
-              e.stopPropagation()
-              searchInputRef.current?.focus()
-            }
-          }}
-        />
+      {/* 书签标题编辑 */}
+      <div style={{
+        fontSize: '10px',
+        fontWeight: 600,
+        color: colors.textDim,
+        textTransform: 'uppercase' as const,
+        letterSpacing: '0.5px',
+        marginBottom: '4px',
+        fontFamily: fonts.mono,
+      }}>
+        书签标题
+      </div>
+      <input
+        ref={titleInputRef}
+        type="text"
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        onFocus={() => setTitleFocus(true)}
+        onBlur={() => setTitleFocus(false)}
+        style={{
+          fontFamily: fonts.mono,
+          fontSize: '12px',
+          padding: '6px 10px',
+          borderRadius: '6px',
+          background: colors.bg,
+          color: colors.text,
+          outline: 'none',
+          transition: 'border-color 0.15s, box-shadow 0.15s',
+          marginBottom: '10px',
+          width: '100%',
+          boxSizing: 'border-box' as const,
+          ...(titleFocus ? inputFocusBorder : inputBorderStyle),
+        }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') {
+            e.stopPropagation()
+            searchInputRef.current?.focus()
+          }
+        }}
+      />
 
-        {/* 搜索框 */}
-        <div style={styles.modalFieldLabel}>
-          目标目录
-        </div>
-        <input
-          ref={searchInputRef}
-          type="text"
-          placeholder="搜索目录..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          onFocus={() => setSearchFocus(true)}
-          onBlur={() => setSearchFocus(false)}
-          style={{
-            ...styles.modalSearchInput,
-            ...(searchFocus ? inputFocusBorder : inputBorderStyle),
-          }}
-        />
+      {/* 搜索框 */}
+      <div style={{
+        fontSize: '10px',
+        fontWeight: 600,
+        color: colors.textDim,
+        textTransform: 'uppercase' as const,
+        letterSpacing: '0.5px',
+        marginBottom: '4px',
+        fontFamily: fonts.mono,
+      }}>
+        目标目录
+      </div>
+      <input
+        ref={searchInputRef}
+        type="text"
+        placeholder="搜索目录..."
+        value={searchQuery}
+        onChange={e => setSearchQuery(e.target.value)}
+        onFocus={() => setSearchFocus(true)}
+        onBlur={() => setSearchFocus(false)}
+        style={{
+          fontFamily: fonts.mono,
+          fontSize: '12px',
+          padding: '6px 10px',
+          borderRadius: '6px',
+          outline: 'none',
+          transition: 'border-color 0.15s, box-shadow 0.15s',
+          marginBottom: '8px',
+          width: '100%',
+          boxSizing: 'border-box' as const,
+          background: colors.bg,
+          color: colors.text,
+          ...(searchFocus ? inputFocusBorder : inputBorderStyle),
+        }}
+      />
 
-        {/* 文件夹列表 */}
-        <div style={styles.modalList}>
-          {loading ? (
-            <div style={styles.modalEmptyState}>
-              <span style={{ color: colors.accent }}>⟳</span> 加载中...
-            </div>
-          ) : filteredFolders.length === 0 ? (
-            <div style={styles.modalEmptyState}>∅ 未找到匹配的目录</div>
-          ) : (
-            filteredFolders.map(f => (
-              <div
-                key={f.id}
-                style={{
-                  ...styles.modalItem,
-                  ...(f.id === selectedFolderId ? styles.modalItemSelected : {}),
-                  ...(hoverItem === f.id && f.id !== selectedFolderId ? { background: `${colors.accent}08` } : {}),
-                }}
-                onClick={() => setSelectedFolderId(f.id)}
-                onMouseEnter={() => setHoverItem(f.id)}
-                onMouseLeave={() => setHoverItem(null)}
-              >
-                <span style={styles.modalItemIcon}>📁</span>
-                <div style={styles.modalItemContent}>
-                  <span style={styles.modalItemTitle}>{f.title}</span>
-                  <span style={styles.modalItemPath}>{f.path}</span>
-                </div>
-                {f.id === selectedFolderId && (
-                  <span style={styles.modalCheckmark}>✓</span>
-                )}
+      {/* 文件夹列表 */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto' as const,
+        maxHeight: 260,
+        border: `1px solid ${colors.border}`,
+        borderRadius: '6px',
+        background: colors.surface,
+        marginBottom: '10px',
+      }}>
+        {loading ? (
+          <div style={{
+            textAlign: 'center' as const,
+            color: colors.textDim,
+            padding: '24px 0',
+            fontSize: '12px',
+            fontFamily: fonts.mono,
+          }}>
+            <span style={{ color: colors.accent }}>⟳</span> 加载中...
+          </div>
+        ) : filteredFolders.length === 0 ? (
+          <div style={{
+            textAlign: 'center' as const,
+            color: colors.textDim,
+            padding: '24px 0',
+            fontSize: '12px',
+            fontFamily: fonts.mono,
+          }}>
+            ∅ 未找到匹配的目录
+          </div>
+        ) : (
+          filteredFolders.map(f => (
+            <div
+              key={f.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 10px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'background 0.1s',
+                ...(f.id === selectedFolderId ? {
+                  background: `${colors.accent}12`,
+                  border: `1px solid ${colors.accent}30`,
+                } : {}),
+                ...(hoverItem === f.id && f.id !== selectedFolderId ? { background: `${colors.accent}08` } : {}),
+              }}
+              onClick={() => setSelectedFolderId(f.id)}
+              onMouseEnter={() => setHoverItem(f.id)}
+              onMouseLeave={() => setHoverItem(null)}
+            >
+              <span style={{ fontSize: '14px', flexShrink: 0 }}>📁</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  color: colors.text,
+                  fontFamily: fonts.mono,
+                  display: 'block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap' as const,
+                }}>
+                  {f.title}
+                </span>
+                <span style={{
+                  fontSize: '10px',
+                  color: colors.textDim,
+                  fontFamily: fonts.mono,
+                  display: 'block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap' as const,
+                  marginTop: '1px',
+                }}>
+                  {f.path}
+                </span>
               </div>
-            ))
-          )}
-        </div>
+              {f.id === selectedFolderId && (
+                <span style={{ color: colors.accent, fontSize: '13px', fontWeight: 700, flexShrink: 0 }}>
+                  ✓
+                </span>
+              )}
+            </div>
+          ))
+        )}
+      </div>
 
-        {/* 操作按钮 */}
-        <div style={styles.modalActions}>
-          <button
-            onClick={onCancel}
-            style={styles.btnSecondary}
-          >
-            取消
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!selectedFolderId || !title.trim()}
-            style={(selectedFolderId && title.trim()) ? styles.btnPrimary : styles.btnPrimaryDisabled}
-          >
-            保存
-          </button>
-        </div>
+      {/* 操作按钮 */}
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        justifyContent: 'flex-end' as const,
+      }}>
+        <button
+          onClick={onBack}
+          style={styles.btnSecondary}
+        >
+          取消
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={!selectedFolderId || !title.trim()}
+          style={(selectedFolderId && title.trim()) ? styles.btnPrimary : styles.btnPrimaryDisabled}
+        >
+          保存
+        </button>
       </div>
     </div>
   )
